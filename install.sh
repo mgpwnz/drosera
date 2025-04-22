@@ -15,6 +15,10 @@ while test $# -gt 0; do
             function="uninstall"
             shift
             ;;
+        -rpc|--rpc)
+            function="rpc"
+            shift
+            ;;
         *|--)
             break
         ;;
@@ -147,13 +151,13 @@ ExecStart=$(which drosera-operator) node --db-file-path $HOME/.drosera.db --netw
 WantedBy=multi-user.target
 EOF
 
-# === ENABLE FIREWALL ===
-#echo "🔐 Configuring UFW firewall..."
-#sudo ufw allow ssh
-#sudo ufw allow 22
-#sudo ufw allow 31313/tcp
-#sudo ufw allow 31314/tcp
-#sudo ufw --force enable
+# # === ENABLE FIREWALL ===
+# echo "🔐 Configuring UFW firewall..."
+# sudo ufw allow ssh
+# sudo ufw allow 22
+# sudo ufw allow 31313/tcp
+# sudo ufw allow 31314/tcp
+# sudo ufw --force enable
 
 # === START SERVICE ===
 echo "🚀 Starting drosera service..."
@@ -191,6 +195,33 @@ uninstall() {
           echo "❌ Uninstall canceled."
           ;;
   esac
+}
+
+rpc() {
+  SERVICE_FILE="/etc/systemd/system/drosera.service"
+  if [[ ! -f "$SERVICE_FILE" ]]; then
+    echo "❌ Drosera systemd service not found. Please install first."
+    exit 1
+  fi
+
+  read -p "🌐 Enter new ETH RPC URL: " NEW_RPC
+  if [[ -z "$NEW_RPC" ]]; then
+    echo "❌ RPC URL cannot be empty."
+    exit 1
+  fi
+
+  sudo sed -i "s|--eth-rpc-url .* \\\|--eth-rpc-url $NEW_RPC \\\|" "$SERVICE_FILE"
+  sudo systemctl daemon-reload
+  sudo systemctl restart drosera
+  echo "✅ RPC updated and drosera service restarted."
+
+  # Update ENV file
+  ENV_FILE="$HOME/.drosera_env"
+  if grep -q "^ETH_RPC=" "$ENV_FILE"; then
+    sed -i "s|^ETH_RPC=.*|ETH_RPC=\"$NEW_RPC\"|" "$ENV_FILE"
+  else
+    echo "ETH_RPC=\"$NEW_RPC\"" >> "$ENV_FILE"
+  fi
 }
 
 # Actions
