@@ -1,179 +1,180 @@
 #!/bin/bash
 
-function="install"
-ENV_FILE="$HOME/.drosera_env"
+while true; do
+# === Главное меню ===
+PS3='Select an action: '
+options=("Docker" "Trap Setup" "Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Uninstall" "Exit")
+select opt in "${options[@]}"; do
+    case $opt in
 
-while test $# -gt 0; do
-  case "$1" in
-    -in|--install) function="install"; shift ;;
-    -un|--uninstall) function="uninstall"; shift ;;
-    -rpc|--rpc) function="rpc"; shift ;;
-    *|--) break ;;
-  esac
-done
+    "Docker")
+        . <(wget -qO- https://raw.githubusercontent.com/mgpwnz/VS/main/docker.sh)
+        break
+        ;;
 
-install() {
-  cd $HOME
-  set -e
+    "Trap Setup")
+        # Drosera CLI
+        curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+        # Foundry CLI
+        curl -L https://foundry.paradigm.xyz | bash || { echo "❌ Foundry install failed"; exit 1; }
+        # Bun
+        curl -fsSL https://bun.sh/install | bash || { echo "❌ Bun install failed"; exit 1; }
 
-  [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
+        # Add to PATH if not already present
+        for dir in "$HOME/.drosera/bin" "$HOME/.foundry/bin" "$HOME/.bun/bin"; do
+            grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
+        done
+        source "$HOME/.bashrc"
 
-  [[ -z "$GIT_NAME" ]] && read -p "👤 Git user.name: " GIT_NAME && echo "GIT_NAME=\"$GIT_NAME\"" >> "$ENV_FILE"
-  [[ -z "$GIT_EMAIL" ]] && read -p "📧 Git user.email: " GIT_EMAIL && echo "GIT_EMAIL=\"$GIT_EMAIL\"" >> "$ENV_FILE"
-  [[ -z "$PUBKEY" ]] && read -p "🔑 Wallet address (0x...): " PUBKEY && echo "PUBKEY=\"$PUBKEY\"" >> "$ENV_FILE"
-  [[ -z "$PRIVKEY" ]] && read -p "🗝️ Private key: " PRIVKEY && echo "PRIVKEY=\"$PRIVKEY\"" >> "$ENV_FILE"
-  [[ -z "$EXISTING_TRAP" ]] && read -p "🎯 Existing Trap address (or blank): " EXISTING_TRAP && echo "EXISTING_TRAP=\"$EXISTING_TRAP\"" >> "$ENV_FILE"
-  [[ -z "$ETH_RPC" ]] && read -p "🌐 ETH RPC URL (or blank): " ETH_RPC && echo "ETH_RPC=\"$ETH_RPC\"" >> "$ENV_FILE"
+        droseraup
+        foundryup
+        break
+        ;;
 
-  ETH_RPC=${ETH_RPC:-"https://ethereum-holesky-rpc.publicnode.com"}
+    "Deploy Trap")
+        ENV_FILE="$HOME/.env.drosera"
 
-  echo "🔄 Updating system..."
-  sudo apt-get update && sudo apt-get upgrade -y
+        if [[ -f "$ENV_FILE" ]]; then
+            source "$ENV_FILE"
+            echo "🔁 Используется конфигурация из $ENV_FILE"
+        else
+            read -p "Enter GitHub email: " github_Email
+            read -p "Enter GitHub username: " github_Username
+            read -p "Enter your private key: " private_key
+            read -p "Enter your public key: " public_key
+            read -p "🌐 Holesky RPC URL (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC
+            Hol_RPC="${Hol_RPC:-https://ethereum-holesky-rpc.publicnode.com}"
 
-  echo "📦 Installing packages..."
-  sudo apt install curl ufw iptables build-essential git wget lz4 jq make gcc nano \
-    automake autoconf tmux htop nvme-cli libgbm1 pkg-config libssl-dev libleveldb-dev \
-    tar clang bsdmainutils ncdu unzip -y
-
-  echo "🐳 Installing Docker..."
-  touch $HOME/.bash_profile
-  if ! docker --version &>/dev/null; then
-    . /etc/*-release
-    sudo apt update
-    sudo apt install curl apt-transport-https ca-certificates gnupg lsb-release -y
-    wget -qO- "https://download.docker.com/linux/${DISTRIB_ID,,}/gpg" | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/${DISTRIB_ID,,} ${DISTRIB_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt update
-    docker_version=$(apt-cache madison docker-ce | grep -oPm1 "(?<=docker-ce \| )([^_]+)(?= \| https)")
-    sudo apt install docker-ce="$docker_version" docker-ce-cli="$docker_version" containerd.io -y
-  fi
-
-  if ! docker compose version &>/dev/null; then
-    docker_compose_version=$(wget -qO- https://api.github.com/repos/docker/compose/releases/latest | jq -r ".tag_name")
-    sudo wget -O /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${docker_compose_version}/docker-compose-$(uname -s)-$(uname -m)"
-    sudo chmod +x /usr/bin/docker-compose
-  fi
-
-  echo "🛠 Installing Drosera, Foundry, Bun..."
-  curl -sL https://app.drosera.io/install | bash
-  curl -sL https://foundry.paradigm.xyz | bash
-  curl -fsSL https://bun.sh/install | bash
-  source ~/.bashrc
-  droseraup
-  foundryup
-
-  echo "📁 Setting up Trap project..."
-  mkdir -p $HOME/my-drosera-trap
-  cd $HOME/my-drosera-trap
-  git config --global user.email "$GIT_EMAIL"
-  git config --global user.name "$GIT_NAME"
-
-  if [[ -f "drosera.toml" ]]; then
-    echo "🔁 Found drosera.toml, reusing..."
-    EXISTING_TRAP=$(grep '^address' drosera.toml | cut -d'"' -f2)
-    echo "EXISTING_TRAP=\"$EXISTING_TRAP\"" >> "$ENV_FILE"
-  else
-    forge init -t drosera-network/trap-foundry-template
-    bun install
-    source ~/.bashrc
-    forge build
-  fi
-
-  SERVER_IP=$(hostname -I | awk '{print $1}')
-
-  sed -i '/^private/d' drosera.toml
-  sed -i '/^whitelist/d' drosera.toml
-  sed -i '/^\[network\]/,$d' drosera.toml
-
-  echo "private_trap = true" >> drosera.toml
-  echo "whitelist = [\"$PUBKEY\"]" >> drosera.toml
-  echo "[network]" >> drosera.toml
-  echo "external_p2p_address = \"$SERVER_IP\"" >> drosera.toml
-
-  [[ -n "$EXISTING_TRAP" ]] && grep -q '^address' drosera.toml || echo "address = \"$EXISTING_TRAP\"" >> drosera.toml
-
-  if grep -q '^address = ' drosera.toml && [[ -n "$EXISTING_TRAP" ]]; then
-    echo "📦 Existing Trap detected. Skipping drosera apply..."
-  else
-    echo "🚀 Applying Trap config..."
-    DROSERA_PRIVATE_KEY="$PRIVKEY" drosera apply
-  fi
-  drosera dryrun
-
-  echo "⬇️ Installing Operator CLI..."
-  cd ~
-  curl -LO https://github.com/drosera-network/releases/releases/download/v1.16.2/drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
-  tar -xvf drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
-  docker pull ghcr.io/drosera-network/drosera-operator:latest || true
-  drosera-operator register --eth-rpc-url "$ETH_RPC" --eth-private-key "$PRIVKEY" || echo "⚠️ Already registered"
-
-  echo "⚙️ Creating systemd service..."
-  sudo tee /etc/systemd/system/drosera.service > /dev/null <<EOF
-[Unit]
-Description=Drosera Node
-After=network-online.target
-
-[Service]
-User=$USER
-Restart=always
-RestartSec=15
-LimitNOFILE=65535
-ExecStart=$HOME/.drosera/bin/drosera-operator node --db-file-path $HOME/.drosera.db --network-p2p-port 31313 --server-port 31314 \
-  --eth-rpc-url $ETH_RPC \
-  --eth-backup-rpc-url https://1rpc.io/holesky \
-  --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 \
-  --eth-private-key $PRIVKEY \
-  --listen-address 0.0.0.0 \
-  --network-external-p2p-address $SERVER_IP \
-  --disable-dnr-confirmation true
-
-[Install]
-WantedBy=multi-user.target
+cat > "$ENV_FILE" <<EOF
+github_Email="$github_Email"
+github_Username="$github_Username"
+private_key="$private_key"
+public_key="$public_key"
+Hol_RPC="$Hol_RPC"
 EOF
 
-  sudo systemctl daemon-reload
-  sudo systemctl enable drosera
-  sudo systemctl start drosera
+            echo "💾 Конфигурация сохранена в $ENV_FILE"
+        fi
 
-#   sudo ufw allow ssh
-#   sudo ufw allow 22
-#   sudo ufw allow 31313/tcp
-#   sudo ufw allow 31314/tcp
-#   sudo ufw --force enable
+        for dir in "$HOME/.foundry/bin" "$HOME/.drosera/bin" "$HOME/.bun/bin"; do
+            grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
+        done
+        source "$HOME/.bashrc"
 
-  echo -e "\n✅ Done! Drosera node running."
-}
+        mkdir -p "$HOME/my-drosera-trap"
+        cd "$HOME/my-drosera-trap"
 
-uninstall() {
-  read -r -p "🧹 Remove all but keep config? [y/N] " response
-  case "$response" in
-    [yY][eE][sS]|[yY])
-      sudo systemctl stop drosera 2>/dev/null
-      sudo systemctl disable drosera 2>/dev/null
-      sudo rm -f /etc/systemd/system/drosera.service
-      sudo systemctl daemon-reload
-      rm -rf $HOME/my-drosera-trap
-      rm -rf $HOME/.drosera
-      rm -rf $HOME/.drosera.db
-      rm -f $HOME/drosera-operator*
-      echo "✅ Cleaned up. .env saved at $ENV_FILE"
-      ;;
-    *) echo "❌ Cancelled" ;;
-  esac
-}
+        git config --global user.email "$github_Email"
+        git config --global user.name "$github_Username"
 
-rpc() {
-  SERVICE_FILE="/etc/systemd/system/drosera.service"
-  [[ ! -f "$SERVICE_FILE" ]] && echo "❌ Service not found." && exit 1
-  read -p "🔄 New ETH RPC URL: " NEW_RPC
-  [[ -z "$NEW_RPC" ]] && echo "❌ Empty value." && exit 1
-  sudo sed -i -E "s|--eth-rpc-url +[^ ]+|--eth-rpc-url $NEW_RPC|g" "$SERVICE_FILE"
-  sudo systemctl daemon-reload
-  sudo systemctl restart drosera
-  sed -i "s|^ETH_RPC=.*|ETH_RPC=\"$NEW_RPC\"|" "$ENV_FILE" || echo "ETH_RPC=\"$NEW_RPC\"" >> "$ENV_FILE"
-  echo "✅ RPC updated and service restarted."
-}
+        forge init -t drosera-network/trap-foundry-template
+        curl -fsSL https://bun.sh/install | bash
+        source "$HOME/.bashrc"
+        bun install
+        forge build
 
-sudo apt install wget -y &>/dev/null
-cd
-$function
+        echo "📢 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
+        echo "ℹ️ Type 'ofc' and press enter to continue"
+        read
+
+        DROSERA_PRIVATE_KEY="$private_key" drosera apply
+
+        cd "$HOME"
+        break
+        ;;
+
+    "Installing and configuring the Operator")
+        ENV_FILE="$HOME/.env.drosera"
+        if [[ ! -f "$ENV_FILE" ]]; then
+            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Deploy Trap'."
+            exit 1
+        fi
+        source "$ENV_FILE"
+
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
+
+        sed -i '/^private/d' drosera.toml
+        sed -i '/^whitelist/d' drosera.toml
+        sed -i '/^\[network\]/,$d' drosera.toml
+
+        cat >> drosera.toml <<EOF
+private_trap = true
+whitelist = ["$public_key"]
+
+[network]
+external_p2p_address = "$SERVER_IP"
+EOF
+
+        DROSERA_PRIVATE_KEY="$private_key" drosera apply
+        break
+        ;;
+
+    "CLI operator installation")
+        source "$HOME/.env.drosera"
+        cd "$HOME"
+        curl -LO https://github.com/drosera-network/releases/releases/download/v1.16.2/drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
+        tar -xvf drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
+        docker pull ghcr.io/drosera-network/drosera-operator:latest
+        drosera-operator register --eth-rpc-url "$Hol_RPC" --eth-private-key "$private_key"
+        break
+        ;;
+
+    "RUN Drosera")
+        source "$HOME/.env.drosera"
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+
+        mkdir -p "$HOME/Drosera"
+        cd "$HOME/Drosera"
+
+        cat > docker-compose.yml <<EOF
+version: '3'
+services:
+  drosera:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node
+    ports:
+      - "31313:31313"
+      - "31314:31314"
+    volumes:
+      - drosera_data:/data
+    command: node --db-file-path /data/drosera.db --network-p2p-port 31313 --server-port 31314 --eth-rpc-url ${Hol_RPC} --eth-backup-rpc-url https://holesky.drpc.org --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 --eth-private-key ${private_key} --listen-address 0.0.0.0 --network-external-p2p-address ${SERVER_IP} --disable-dnr-confirmation true
+    restart: always
+
+volumes:
+  drosera_data:
+EOF
+
+        docker compose up -d
+        break
+        ;;
+
+    "Logs")
+        docker logs -f drosera-node
+        break
+        ;;
+
+    "Uninstall")
+        if [ ! -d "$HOME/Drosera" ]; then
+            break
+        fi
+        read -r -p "Wipe all DATA? [y/N] " response
+        case "$response" in
+            [yY][eE][sS]|[yY])
+                cd "$HOME/Drosera" && docker compose down -v
+                rm -rf "$HOME/Drosera"
+                ;;
+            *)
+                echo "❌ Операция отменена"
+                ;;
+        esac
+        break
+        ;;
+
+    "Exit")
+        exit
+        ;;
+    *) echo "Invalid option $REPLY" ;;
+    esac
+done
+done
