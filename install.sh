@@ -24,10 +24,15 @@ select opt in "${options[@]}"; do
         for dir in "$HOME/.drosera/bin" "$HOME/.foundry/bin" "$HOME/.bun/bin"; do
             grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
         done
+
+
+        # Reload PATH and install Drosera & Foundry
         source "$HOME/.bashrc"
 
-        bash -c "droseraup"
-        bash -c "foundryup"
+        # Use --login to make sure .bashrc is sourced properly
+        bash --login -c "$HOME/.drosera/bin/droseraup"
+        bash --login -c "$HOME/.foundry/bin/foundryup"
+
 
         ENV_FILE="$HOME/.env.drosera"
 
