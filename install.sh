@@ -3,7 +3,7 @@
 while true; do
 # === Главное меню ===
 PS3='Select an action: '
-options=("Docker" "Trap Setup" "Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Uninstall" "Exit")
+options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
     case $opt in
 
@@ -12,7 +12,7 @@ select opt in "${options[@]}"; do
         break
         ;;
 
-    "Trap Setup")
+    "Setup & Deploy Trap")
         # Drosera CLI
         curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
         # Foundry CLI
@@ -29,10 +29,6 @@ select opt in "${options[@]}"; do
         bash -c "droseraup"
         bash -c "foundryup"
 
-        break
-        ;;
-
-    "Deploy Trap")
         ENV_FILE="$HOME/.env.drosera"
 
         if [[ -f "$ENV_FILE" ]]; then
@@ -69,9 +65,6 @@ EOF
         git config --global user.name "$github_Username"
 
         forge init -t drosera-network/trap-foundry-template
-        curl -fsSL https://bun.sh/install | bash
-        source "$HOME/.bashrc"
-        bun install
         forge build
 
         echo "📢 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
