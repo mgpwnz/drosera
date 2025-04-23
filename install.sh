@@ -13,68 +13,68 @@ select opt in "${options[@]}"; do
         ;;
 
     "Setup & Deploy Trap")
-    # === Установка CLI ===
-    curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
-    curl -L https://foundry.paradigm.xyz | bash || { echo "❌ Foundry install failed"; exit 1; }
-    curl -fsSL https://bun.sh/install | bash || { echo "❌ Bun install failed"; exit 1; }
+        # === Установка CLI ===
+        curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+        curl -L https://foundry.paradigm.xyz | bash || { echo "❌ Foundry install failed"; exit 1; }
+        curl -fsSL https://bun.sh/install | bash || { echo "❌ Bun install failed"; exit 1; }
 
-    # === Додаємо CLI шляхи до PATH (bashrc) ===
-    for dir in "$HOME/.drosera/bin" "$HOME/.foundry/bin" "$HOME/.bun/bin"; do
-        grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
-    done
-    source "$HOME/.bashrc"
+        # === Додаємо CLI шляхи до PATH (bashrc) ===
+        for dir in "$HOME/.drosera/bin" "$HOME/.foundry/bin" "$HOME/.bun/bin"; do
+            grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
+        done
+        source "$HOME/.bashrc"
 
-    # === Запускаємо droseraup & foundryup з оновленим PATH ===
-    bash --login -c "$HOME/.drosera/bin/droseraup"
-    bash --login -c "$HOME/.foundry/bin/foundryup"
+        # === Запускаємо оновлення CLI ===
+        "$HOME/.drosera/bin/droseraup"
+        "$HOME/.foundry/bin/foundryup"
 
-    # === Завантаження або створення .env конфігурації ===
-    ENV_FILE="$HOME/.env.drosera"
-    if [[ -f "$ENV_FILE" ]]; then
-        source "$ENV_FILE"
-        echo "🔁 Используется конфигурация из $ENV_FILE"
-    else
-        read -p "Enter GitHub email: " github_Email
-        read -p "Enter GitHub username: " github_Username
-        read -p "Enter your private key: " private_key
-        read -p "Enter your public key: " public_key
-        read -p "🌐 Holesky RPC URL (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC
-        Hol_RPC="${Hol_RPC:-https://ethereum-holesky-rpc.publicnode.com}"
+        # === Завантаження або створення .env конфігурації ===
+        ENV_FILE="$HOME/.env.drosera"
+        if [[ -f "$ENV_FILE" ]]; then
+            source "$ENV_FILE"
+            echo "🔁 Используется конфигурация из $ENV_FILE"
+        else
+            read -p "Enter GitHub email: " github_Email
+            read -p "Enter GitHub username: " github_Username
+            read -p "Enter your private key: " private_key
+            read -p "Enter your public key: " public_key
+            read -p "🌐 Holesky RPC URL (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC
+            Hol_RPC="${Hol_RPC:-https://ethereum-holesky-rpc.publicnode.com}"
 
-        cat > "$ENV_FILE" <<EOF
+            cat > "$ENV_FILE" <<EOF
 github_Email="$github_Email"
 github_Username="$github_Username"
 private_key="$private_key"
 public_key="$public_key"
 Hol_RPC="$Hol_RPC"
 EOF
-        echo "💾 Конфигурация сохранена в $ENV_FILE"
-    fi
+            echo "📂 Конфигурация сохранена в $ENV_FILE"
+        fi
 
-    # === Створення і компіляція Trap ===
-    mkdir -p "$HOME/my-drosera-trap"
-    cd "$HOME/my-drosera-trap"
+        # === Створення і компіляція Trap ===
+        mkdir -p "$HOME/my-drosera-trap"
+        cd "$HOME/my-drosera-trap"
 
-    git config --global user.email "$github_Email"
-    git config --global user.name "$github_Username"
+        git config --global user.email "$github_Email"
+        git config --global user.name "$github_Username"
 
-    bash --login -c "forge init -t drosera-network/trap-foundry-template"
-    bash --login -c "bun install"
-    bash --login -c "forge build"
+        "$HOME/.foundry/bin/forge" init -t drosera-network/trap-foundry-template
+        "$HOME/.bun/bin/bun" install
+        "$HOME/.foundry/bin/forge" build
 
-    echo "📢 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
+        echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
+        read
 
-    DROSERA_PRIVATE_KEY="$private_key" drosera apply
+        DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
 
-    cd "$HOME"
-    break
-    ;;
-
+        cd "$HOME"
+        break
+        ;;
 
     "Installing and configuring the Operator")
         ENV_FILE="$HOME/.env.drosera"
         if [[ ! -f "$ENV_FILE" ]]; then
-            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Deploy Trap'."
+            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
             exit 1
         fi
         source "$ENV_FILE"
@@ -94,7 +94,7 @@ whitelist = ["$public_key"]
 external_p2p_address = "$SERVER_IP"
 EOF
 
-        DROSERA_PRIVATE_KEY="$private_key" drosera apply
+        DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
         break
         ;;
 
@@ -164,5 +164,6 @@ EOF
         ;;
     *) echo "Invalid option $REPLY" ;;
     esac
+
 done
 done
