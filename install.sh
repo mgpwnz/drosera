@@ -101,10 +101,20 @@ EOF
     "CLI operator installation")
         source "$HOME/.env.drosera"
         cd "$HOME"
+
         curl -LO https://github.com/drosera-network/releases/releases/download/v1.16.2/drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
         tar -xvf drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
-        docker pull ghcr.io/drosera-network/drosera-operator:latest
-        drosera-operator register --eth-rpc-url "$Hol_RPC" --eth-private-key "$private_key"
+
+        # Пошук двійкового файлу після розпакування
+        OPERATOR_BIN=$(find . -type f -name "drosera-operator" | head -n 1)
+
+        if [[ ! -x "$OPERATOR_BIN" ]]; then
+            chmod +x "$OPERATOR_BIN"
+        fi
+
+        echo "🚀 Виконую: $OPERATOR_BIN register ..."
+
+        "$OPERATOR_BIN" register --eth-rpc-url "$Hol_RPC" --eth-private-key "$private_key"
         break
         ;;
 
