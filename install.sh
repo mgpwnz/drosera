@@ -135,11 +135,11 @@ EOF
   sudo systemctl enable drosera
   sudo systemctl start drosera
 
-  sudo ufw allow ssh
-  sudo ufw allow 22
-  sudo ufw allow 31313/tcp
-  sudo ufw allow 31314/tcp
-  sudo ufw --force enable
+#   sudo ufw allow ssh
+#   sudo ufw allow 22
+#   sudo ufw allow 31313/tcp
+#   sudo ufw allow 31314/tcp
+#   sudo ufw --force enable
 
   echo -e "\n✅ Done! Drosera node running."
 }
