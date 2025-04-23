@@ -26,8 +26,9 @@ select opt in "${options[@]}"; do
         done
         source "$HOME/.bashrc"
 
-        droseraup
-        foundryup
+        bash -c "droseraup"
+        bash -c "foundryup"
+
         break
         ;;
 
@@ -74,7 +75,6 @@ EOF
         forge build
 
         echo "📢 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
-        echo "ℹ️ Type 'ofc' and press enter to continue"
         read
 
         DROSERA_PRIVATE_KEY="$private_key" drosera apply
