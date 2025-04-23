@@ -106,10 +106,18 @@ forge build
 # Add trap address if provided
 [[ -n "$EXISTING_TRAP" ]] && echo "address = \"$EXISTING_TRAP\"" >> drosera.toml
 
-# Replace Ethereum RPC and set private config
-sed -i "s|^ethereum_rpc = \".*\"|ethereum_rpc = \"$ETH_RPC\"|" drosera.toml || echo "ethereum_rpc = \"$ETH_RPC\"" >> drosera.toml
-sed -i "s/^whitelist = .*/whitelist = [\"$PUBKEY\"]/" drosera.toml || echo "whitelist = [\"$PUBKEY\"]" >> drosera.toml
-grep -q '^private_trap' drosera.toml || echo 'private_trap = true' >> drosera.toml
+# Remove any old private_trap or whitelist lines
+sed -i '/^private_trap/d' drosera.toml
+sed -i '/^whitelist/d' drosera.toml
+
+# Append new whitelist and external IP block
+SERVER_IP=$(hostname -I | awk '{print $1}')
+{
+  echo "private_trap = true"
+  echo "whitelist = [\"$PUBKEY\"]"
+  echo "[network]"
+  echo "external_p2p_address = \"$SERVER_IP\""
+} >> drosera.toml
 
 DROSERA_PRIVATE_KEY="$PRIVKEY" drosera apply
 drosera dryrun
