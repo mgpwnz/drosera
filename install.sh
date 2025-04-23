@@ -81,7 +81,7 @@ install() {
 
   SERVER_IP=$(hostname -I | awk '{print $1}')
 
-  sed -i '/^private_trap/d' drosera.toml
+  sed -i '/^private/d' drosera.toml
   sed -i '/^whitelist/d' drosera.toml
   sed -i '/^\[network\]/,$d' drosera.toml
 
