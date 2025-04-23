@@ -66,7 +66,7 @@ EOF
         read
 
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
-
+        "$HOME/.drosera/bin/drosera" dryrun
         cd "$HOME"
         break
         ;;
