@@ -210,17 +210,18 @@ rpc() {
     exit 1
   fi
 
-  sudo sed -i "s|--eth-rpc-url .* \\\|--eth-rpc-url $NEW_RPC \\\|" "$SERVICE_FILE"
+  sudo sed -i -E "s|--eth-rpc-url +[^ ]+|--eth-rpc-url $NEW_RPC|g" "$SERVICE_FILE"
+
   sudo systemctl daemon-reload
   sudo systemctl restart drosera
-  echo "✅ RPC updated and drosera service restarted."
+  echo "✅ RPC updated to $NEW_RPC and drosera service restarted."
 
   # Update ENV file
-  ENV_FILE="$HOME/.drosera_env"
-  if grep -q "^ETH_RPC=" "$ENV_FILE"; then
-    sed -i "s|^ETH_RPC=.*|ETH_RPC=\"$NEW_RPC\"|" "$ENV_FILE"
+  ENV_FILE=\"$HOME/.drosera_env\"
+  if grep -q \"^ETH_RPC=\" \"$ENV_FILE\"; then
+    sed -i \"s|^ETH_RPC=.*|ETH_RPC=\\\"$NEW_RPC\\\"|\" \"$ENV_FILE\"
   else
-    echo "ETH_RPC=\"$NEW_RPC\"" >> "$ENV_FILE"
+    echo \"ETH_RPC=\\\"$NEW_RPC\\\"\" >> \"$ENV_FILE\"
   fi
 }
 
