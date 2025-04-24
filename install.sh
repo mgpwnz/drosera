@@ -206,6 +206,7 @@ EOF
         break
         ;;
             "Add Secondary Operator")
+        SERVER_IP=$(hostname -I | awk '{print $1}')
         ENV_FILE="$HOME/.env.drosera"
 
         # === Читаємо вже існуючі значення, якщо є ===
@@ -232,7 +233,7 @@ EOF
         cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; break; }
 
         sed -i '/^whitelist/d' drosera.toml
-        echo "whitelist = [\"$public_key\", \"$public_key2\"]" >> drosera.toml
+        echo "whitelist = [\"$public_key\",\"$public_key2\"]" >> drosera.toml
 
         # === Apply ===
         if [[ -n "$Hol_RPC" ]]; then
