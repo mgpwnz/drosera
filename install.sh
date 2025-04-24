@@ -195,8 +195,8 @@ whitelist = ["$public_key", "$public_key2"]
 EOF
 
         # Обновление конфигурации
-        if [[ -n "$Hol_RPC" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+        if [[ -n "$Hol_RPC2" ]]; then
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC2"
         else
             DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
         fi
