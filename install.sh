@@ -74,11 +74,36 @@ select opt in "${options[@]}"; do
         echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
         read
 
-        if [[ -n "$Hol_RPC" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
-        else
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
-        fi
+        # === APPLY  ===
+        while true; do
+            echo "🚀 Trying to apply updated config with primary key..."
+            if [[ -n "$Hol_RPC" ]]; then
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC" 2>&1)
+            else
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply 2>&1)
+            fi
+
+            echo "$APPLY_OUTPUT"
+
+            if echo "$APPLY_OUTPUT" | grep -q "InvalidNumberOfOperators"; then
+                echo "❌ Apply failed: Invalid number of operators."
+                read -p "🔁 Try again after fixing configuration or funding wallet? (y/n): " retry
+                case "$retry" in
+                    [yY][eE][sS]|[yY]) continue ;;
+                    *) echo "❌ Aborting."; break ;;
+                esac
+            elif echo "$APPLY_OUTPUT" | grep -q "Error"; then
+                echo "❌ Apply failed with an error."
+                read -p "🔁 Retry anyway? (y/n): " retry
+                case "$retry" in
+                    [yY][eE][sS]|[yY]) continue ;;
+                    *) echo "❌ Aborting."; break ;;
+                esac
+            else
+                echo "✅ Config applied successfully!"
+                break
+            fi
+        done
         "$HOME/.drosera/bin/drosera" dryrun
         cd "$HOME"
         break
@@ -233,16 +258,39 @@ EOF
 
         sed -i '/^whitelist/d' drosera.toml
         echo "whitelist = [\"$public_key\", \"$public_key2\"]" >> drosera.toml
-
-        # === Apply ===
-        if [[ -n "$Hol_RPC" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
-        else
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
-        fi
-
+        
         echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+) for the second operator"
         read
+        # === APPLY  ===
+        while true; do
+            echo "🚀 Trying to apply updated config with primary key..."
+            if [[ -n "$Hol_RPC" ]]; then
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC" 2>&1)
+            else
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply 2>&1)
+            fi
+
+            echo "$APPLY_OUTPUT"
+
+            if echo "$APPLY_OUTPUT" | grep -q "InvalidNumberOfOperators"; then
+                echo "❌ Apply failed: Invalid number of operators."
+                read -p "🔁 Try again after fixing configuration or funding wallet? (y/n): " retry
+                case "$retry" in
+                    [yY][eE][sS]|[yY]) continue ;;
+                    *) echo "❌ Aborting."; break ;;
+                esac
+            elif echo "$APPLY_OUTPUT" | grep -q "Error"; then
+                echo "❌ Apply failed with an error."
+                read -p "🔁 Retry anyway? (y/n): " retry
+                case "$retry" in
+                    [yY][eE][sS]|[yY]) continue ;;
+                    *) echo "❌ Aborting."; break ;;
+                esac
+            else
+                echo "✅ Config applied successfully!"
+                break
+            fi
+        done
 
         cd "$HOME"
         OPERATOR_BIN=$(find . -type f -name "drosera-operator" | head -n 1)
