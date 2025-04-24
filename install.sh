@@ -94,7 +94,11 @@ whitelist = ["$public_key"]
 external_p2p_address = "$SERVER_IP"
 EOF
 
-        DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+        if [[ -n "$Hol_RPC" ]]; then
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+        else
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+        fi
         break
         ;;
 
