@@ -107,7 +107,7 @@ EOF
         cd "$HOME"
 
         curl -LO https://github.com/drosera-network/releases/releases/download/v1.16.2/drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
-        tar -xvf drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
+        tar -xvf drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz && rm -f drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
 
         # Пошук двійкового файлу після розпакування
         OPERATOR_BIN=$(find . -type f -name "drosera-operator" | head -n 1)
