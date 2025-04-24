@@ -220,9 +220,9 @@ EOF
         P2P_PORT1="${P2P_PORT1:-31313}"
         read -p "Enter SERVER_PORT1 (default 31314): " SERVER_PORT1
         SERVER_PORT1="${SERVER_PORT1:-31314}"
-        read -p "Enter P2P_PORT2 (default 32313): " P2P_PORT2
+        read -p "Enter P2P_PORT2 (default 32315): " P2P_PORT2
         P2P_PORT2="${P2P_PORT2:-32313}"
-        read -p "Enter SERVER_PORT2 (default 32314): " SERVER_PORT2
+        read -p "Enter SERVER_PORT2 (default 32316): " SERVER_PORT2
         SERVER_PORT2="${SERVER_PORT2:-32314}"
 
         SERVER_IP=$(hostname -I | awk '{print $1}')
