@@ -3,7 +3,7 @@
 while true; do
 # === Главное меню ===
 PS3='Select an action: '
-options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Uninstall" "Exit")
+options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
     case $opt in
 
@@ -155,7 +155,19 @@ EOF
         docker logs -f drosera-node
         break
         ;;
-
+    "Check")
+        IP=$(hostname -I | awk '{print $1}')
+        RESPONSE=$(curl -s --location "http://$IP:31314" \
+            --header 'Content-Type: application/json' \
+            --data '{
+                "jsonrpc": "2.0",
+                "method": "drosera_healthCheck",
+                "params": [],
+                "id": 1
+            }')
+        echo "$RESPONSE" | jq
+        break
+        ;;
     "Uninstall")
         if [ ! -d "$HOME/Drosera" ]; then
             break
