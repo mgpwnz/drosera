@@ -205,7 +205,7 @@ EOF
         echo "$RESPONSE" | jq
         break
         ;;
-            "Add Secondary Operator")
+    "Add Secondary Operator") 
         SERVER_IP=$(hostname -I | awk '{print $1}')
         ENV_FILE="$HOME/.env.drosera"
 
@@ -230,11 +230,19 @@ EOF
         fi
 
         # === Оновлюємо drosera.toml whitelist ===
-        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; break; }
+        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
 
+        sed -i '/^private/d' drosera.toml
         sed -i '/^whitelist/d' drosera.toml
-        echo "whitelist = [\"$public_key\",\"$public_key2\"]" >> drosera.toml
+        sed -i '/^\[network\]/,$d' drosera.toml
 
+        cat >> drosera.toml <<EOF
+private_trap = true
+whitelist = ["$public_key","$public_key2"]
+
+[network]
+external_p2p_address = "$SERVER_IP"
+EOF
         # === Apply ===
         if [[ -n "$Hol_RPC" ]]; then
             DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
