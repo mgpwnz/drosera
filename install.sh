@@ -12,7 +12,7 @@ select opt in "${options[@]}"; do
         break
         ;;
 
-    "Setup & Deploy Trap")
+        "Setup & Deploy Trap")
         # === Установка CLI ===
         curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
         curl -L https://foundry.paradigm.xyz | bash || { echo "❌ Foundry install failed"; exit 1; }
@@ -30,26 +30,35 @@ select opt in "${options[@]}"; do
 
         # === Завантаження або створення .env конфігурації ===
         ENV_FILE="$HOME/.env.drosera"
-        if [[ -f "$ENV_FILE" ]]; then
-            source "$ENV_FILE"
-            echo "🔁 Используется конфигурация из $ENV_FILE"
-        else
+        [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
+
+        if [[ -z "$github_Email" ]]; then
             read -p "Enter GitHub email: " github_Email
+            echo "github_Email=\"$github_Email\"" >> "$ENV_FILE"
+        fi
+
+        if [[ -z "$github_Username" ]]; then
             read -p "Enter GitHub username: " github_Username
+            echo "github_Username=\"$github_Username\"" >> "$ENV_FILE"
+        fi
+
+        if [[ -z "$private_key" ]]; then
             read -p "Enter your private key: " private_key
+            echo "private_key=\"$private_key\"" >> "$ENV_FILE"
+        fi
+
+        if [[ -z "$public_key" ]]; then
             read -p "Enter your public key: " public_key
+            echo "public_key=\"$public_key\"" >> "$ENV_FILE"
+        fi
+
+        if [[ -z "$Hol_RPC" ]]; then
             read -p "🌐 Holesky RPC URL (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC
             Hol_RPC="${Hol_RPC:-https://ethereum-holesky-rpc.publicnode.com}"
-
-            cat > "$ENV_FILE" <<EOF
-github_Email="$github_Email"
-github_Username="$github_Username"
-private_key="$private_key"
-public_key="$public_key"
-Hol_RPC="$Hol_RPC"
-EOF
-            echo "📂 Конфигурация сохранена в $ENV_FILE"
+            echo "Hol_RPC=\"$Hol_RPC\"" >> "$ENV_FILE"
         fi
+
+        echo "🔁 Используется конфигурация из $ENV_FILE"
 
         # === Створення і компіляція Trap ===
         mkdir -p "$HOME/my-drosera-trap"
@@ -65,11 +74,16 @@ EOF
         echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
         read
 
-        DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+        if [[ -n "$Hol_RPC" ]]; then
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+        else
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+        fi
         "$HOME/.drosera/bin/drosera" dryrun
         cd "$HOME"
         break
         ;;
+
 
     "Installing and configuring the Operator")
         ENV_FILE="$HOME/.env.drosera"
@@ -152,9 +166,32 @@ EOF
         ;;
 
     "Logs")
-        docker logs -f drosera-node
+        echo "Select logs to view:"
+        select logopt in "Main Operator (drosera-node)" "Secondary Operator (drosera-node2)" "Both (combined)" "Back"; do
+            case $logopt in
+                "Main Operator (drosera-node)")
+                    docker logs -f drosera-node
+                    break
+                    ;;
+                "Secondary Operator (drosera-node2)")
+                    docker logs -f drosera-node2
+                    break
+                    ;;
+                "Both (combined)")
+                    cd "$HOME/Drosera" || { echo "❌ Drosera directory not found"; break; }
+                    echo "🔎 Showing combined logs. Press Ctrl+C to stop."
+                    docker compose logs -f
+                    break
+                    ;;
+                "Back")
+                    break
+                    ;;
+                *) echo "Invalid option $REPLY" ;;
+            esac
+        done
         break
         ;;
+
     "Check")
         IP=$(hostname -I | awk '{print $1}')
         RESPONSE=$(curl -s --location "http://$IP:31314" \
@@ -168,64 +205,65 @@ EOF
         echo "$RESPONSE" | jq
         break
         ;;
-        "Add Secondary Operator")
+            "Add Secondary Operator")
         ENV_FILE="$HOME/.env.drosera"
-        if [[ ! -f "$ENV_FILE" ]]; then
-            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
-            break
+
+        # === Читаємо вже існуючі значення, якщо є ===
+        [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
+
+        # === Зчитуємо ключі, якщо вони ще не задані ===
+        if [[ -z "$private_key2" ]]; then
+            read -p "Enter your private key2: " private_key2
+            echo "private_key2=\"$private_key2\"" >> "$ENV_FILE"
         fi
-        source "$ENV_FILE"
 
-        read -p "Enter your private key2: " private_key2
-        read -p "Enter your public key2: " public_key2
-        read -p "🌐 Holesky RPC URL2 (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC2
-        Hol_RPC2="${Hol_RPC2:-https://ethereum-holesky-rpc.publicnode.com}"
+        if [[ -z "$public_key2" ]]; then
+            read -p "Enter your public key2: " public_key2
+            echo "public_key2=\"$public_key2\"" >> "$ENV_FILE"
+        fi
 
-        # Добавляем в ENV_FILE
-        echo "private_key2=\"$private_key2\"" >> "$ENV_FILE"
-        echo "public_key2=\"$public_key2\"" >> "$ENV_FILE"
-        echo "Hol_RPC2=\"$Hol_RPC2\"" >> "$ENV_FILE"
+        if [[ -z "$Hol_RPC2" ]]; then
+            read -p "🌐 Holesky RPC URL2 (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC2
+            Hol_RPC2="${Hol_RPC2:-https://ethereum-holesky-rpc.publicnode.com}"
+            echo "Hol_RPC2=\"$Hol_RPC2\"" >> "$ENV_FILE"
+        fi
 
+        # === Оновлюємо drosera.toml whitelist ===
         cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; break; }
 
-        # Обновляем whitelist
         sed -i '/^whitelist/d' drosera.toml
-        cat >> drosera.toml <<EOF
-whitelist = ["$public_key", "$public_key2"]
-EOF
+        echo "whitelist = [\"$public_key\", \"$public_key2\"]" >> drosera.toml
 
-        # Обновление конфигурации
-        if [[ -n "$Hol_RPC2" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC2"
+        # === Apply ===
+        if [[ -n "$Hol_RPC" ]]; then
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
         else
             DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
         fi
 
         echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+) for the second operator"
-        read -p "Press Enter once ready..."
+        read
 
-        # Регистрация второго оператора
+        cd "$HOME"
         OPERATOR_BIN=$(find . -type f -name "drosera-operator" | head -n 1)
-        if [[ ! -x "$OPERATOR_BIN" ]]; then
-            chmod +x "$OPERATOR_BIN"
-        fi
+        [[ ! -x "$OPERATOR_BIN" ]] && chmod +x "$OPERATOR_BIN"
+
         echo "🚀 Виконую: $OPERATOR_BIN register ..."
         "$OPERATOR_BIN" register --eth-rpc-url "$Hol_RPC2" --eth-private-key "$private_key2"
 
-        # Перезапуск с новым docker-compose
+        # Зупиняємо перший контейнер
         cd "$HOME/Drosera"
         docker compose down -v
 
-        read -p "Enter P2P_PORT1 (default 31313): " P2P_PORT1
+        # Порти
+        read -p "Enter P2P port for first operator (default: 31313): " P2P_PORT1
+        read -p "Enter server port for first operator (default: 31314): " SERVER_PORT1
+        read -p "Enter P2P port for second operator (default: 31315): " P2P_PORT2
+        read -p "Enter server port for second operator (default: 31316): " SERVER_PORT2
         P2P_PORT1="${P2P_PORT1:-31313}"
-        read -p "Enter SERVER_PORT1 (default 31314): " SERVER_PORT1
         SERVER_PORT1="${SERVER_PORT1:-31314}"
-        read -p "Enter P2P_PORT2 (default 32315): " P2P_PORT2
-        P2P_PORT2="${P2P_PORT2:-32313}"
-        read -p "Enter SERVER_PORT2 (default 32316): " SERVER_PORT2
-        SERVER_PORT2="${SERVER_PORT2:-32314}"
-
-        SERVER_IP=$(hostname -I | awk '{print $1}')
+        P2P_PORT2="${P2P_PORT2:-31315}"
+        SERVER_PORT2="${SERVER_PORT2:-31316}"
 
         cat > docker-compose.yml <<EOF
 version: '3'
@@ -258,8 +296,10 @@ volumes:
 EOF
 
         docker compose up -d
+        cd $HOME
         break
         ;;
+
 
     "Uninstall")
         if [ ! -d "$HOME/Drosera" ]; then
