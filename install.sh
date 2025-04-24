@@ -3,7 +3,7 @@
 while true; do
 # === Главное меню ===
 PS3='Select an action: '
-options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Uninstall" "Exit")
+options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Add Secondary Operator" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
     case $opt in
 
@@ -168,6 +168,99 @@ EOF
         echo "$RESPONSE" | jq
         break
         ;;
+        "Add Secondary Operator")
+        ENV_FILE="$HOME/.env.drosera"
+        if [[ ! -f "$ENV_FILE" ]]; then
+            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
+            break
+        fi
+        source "$ENV_FILE"
+
+        read -p "Enter your private key2: " private_key2
+        read -p "Enter your public key2: " public_key2
+        read -p "🌐 Holesky RPC URL2 (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC2
+        Hol_RPC2="${Hol_RPC2:-https://ethereum-holesky-rpc.publicnode.com}"
+
+        # Добавляем в ENV_FILE
+        echo "private_key2=\"$private_key2\"" >> "$ENV_FILE"
+        echo "public_key2=\"$public_key2\"" >> "$ENV_FILE"
+        echo "Hol_RPC2=\"$Hol_RPC2\"" >> "$ENV_FILE"
+
+        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; break; }
+
+        # Обновляем whitelist
+        sed -i '/^whitelist/d' drosera.toml
+        cat >> drosera.toml <<EOF
+whitelist = ["$public_key", "$public_key2"]
+EOF
+
+        # Обновление конфигурации
+        if [[ -n "$Hol_RPC" ]]; then
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+        else
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+        fi
+
+        echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+) for the second operator"
+        read -p "Press Enter once ready..."
+
+        # Регистрация второго оператора
+        OPERATOR_BIN=$(find . -type f -name "drosera-operator" | head -n 1)
+        if [[ ! -x "$OPERATOR_BIN" ]]; then
+            chmod +x "$OPERATOR_BIN"
+        fi
+        echo "🚀 Виконую: $OPERATOR_BIN register ..."
+        "$OPERATOR_BIN" register --eth-rpc-url "$Hol_RPC2" --eth-private-key "$private_key2"
+
+        # Перезапуск с новым docker-compose
+        cd "$HOME/Drosera"
+        docker compose down -v
+
+        read -p "Enter P2P_PORT1 (default 31313): " P2P_PORT1
+        P2P_PORT1="${P2P_PORT1:-31313}"
+        read -p "Enter SERVER_PORT1 (default 31314): " SERVER_PORT1
+        SERVER_PORT1="${SERVER_PORT1:-31314}"
+        read -p "Enter P2P_PORT2 (default 32313): " P2P_PORT2
+        P2P_PORT2="${P2P_PORT2:-32313}"
+        read -p "Enter SERVER_PORT2 (default 32314): " SERVER_PORT2
+        SERVER_PORT2="${SERVER_PORT2:-32314}"
+
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+
+        cat > docker-compose.yml <<EOF
+version: '3'
+services:
+  drosera:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node
+    ports:
+      - "${P2P_PORT1}:31313"
+      - "${SERVER_PORT1}:31314"
+    volumes:
+      - drosera_data:/data
+    command: node --db-file-path /data/drosera.db --network-p2p-port 31313 --server-port 31314 --eth-rpc-url ${Hol_RPC} --eth-backup-rpc-url https://holesky.drpc.org --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 --eth-private-key ${private_key} --listen-address 0.0.0.0 --network-external-p2p-address ${SERVER_IP} --disable-dnr-confirmation true
+    restart: always
+
+  drosera2:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node2
+    ports:
+      - "${P2P_PORT2}:31313"
+      - "${SERVER_PORT2}:31314"
+    volumes:
+      - drosera_data2:/data
+    command: node --db-file-path /data/drosera.db --network-p2p-port 31313 --server-port 31314 --eth-rpc-url ${Hol_RPC2} --eth-backup-rpc-url https://holesky.drpc.org --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 --eth-private-key ${private_key2} --listen-address 0.0.0.0 --network-external-p2p-address ${SERVER_IP} --disable-dnr-confirmation true
+    restart: always
+
+volumes:
+  drosera_data:
+  drosera_data2:
+EOF
+
+        docker compose up -d
+        break
+        ;;
+
     "Uninstall")
         if [ ! -d "$HOME/Drosera" ]; then
             break
