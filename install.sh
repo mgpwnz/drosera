@@ -78,9 +78,9 @@ select opt in "${options[@]}"; do
         while true; do
             echo "🚀 Trying to apply updated config with primary key..."
             if [[ -n "$Hol_RPC" ]]; then
-                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC" 2>&1)
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC" )
             else
-                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply 2>&1)
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply )
             fi
 
             echo "$APPLY_OUTPUT"
@@ -265,9 +265,9 @@ EOF
         while true; do
             echo "🚀 Trying to apply updated config with primary key..."
             if [[ -n "$Hol_RPC" ]]; then
-                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC" 2>&1)
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC" )
             else
-                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply 2>&1)
+                APPLY_OUTPUT=$(DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply )
             fi
 
             echo "$APPLY_OUTPUT"
