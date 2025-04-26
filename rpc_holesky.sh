@@ -30,6 +30,7 @@ install_docker() {
 
 # ---- Generate JWT secret ----
 generate_jwt() {
+  mkdir -p "$JWT_DIR"
   if [[ ! -f "$JWT_FILE" ]]; then
     echo "🔑 Generating JWT secret..."
     openssl rand -hex 32 > "$JWT_FILE"
@@ -88,7 +89,8 @@ EOF
     "--gcmode=archive"
     "--cache=$CACHE"
     "--maxpeers=200"
-    "--bootnodes=enode://ac906289e4b7f12df423d654c5a962b6ebe5b3a74cc9e06292a85221f9a64a6f1cfdd6b714ed6dacef51578f92b34c60ee91e9ede9c7f8fadc4d347326d95e2b@146.190.13.128:30303,enode://a3435a0155a3e837c02f5e7f5662a2f1fbc25b48e4dc232016e1c51b544cb5b4510ef633ea3278c0e970fa8a"
+    # Only one valid bootnode below
+    "--bootnodes=enode://ac906289e4b7f12df423d654c5a962b6ebe5b3a74cc9e06292a85221f9a64a6f1cfdd6b714ed6dacef51578f92b34c60ee91e9ede9c7f8fadc4d347326d95e2b@146.190.13.128:30303"
     "--http"
     "--http.addr=0.0.0.0"
     "--http.port=8545"
