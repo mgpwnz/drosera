@@ -28,7 +28,7 @@ install_docker() {
   fi
 }
 
-# ---- Generate a JWT secret if missing ----
+# ---- Generate JWT secret ----
 generate_jwt() {
   if [[ ! -f "$JWT_FILE" ]]; then
     echo "🔑 Generating JWT secret..."
@@ -39,14 +39,17 @@ generate_jwt() {
   fi
 }
 
-# ---- Download and extract a Holesky snapshot ----
+# ---- Robust download and extract snapshot ----
 download_snapshot() {
   local SNAP_DIR="$DATA_DIR/geth-data/holesky/geth"
+  local SNAP_FILE="$DATA_DIR/snapshot.tar.zst"
   if [[ ! -d "$SNAP_DIR/chaindata" ]]; then
-    echo "⬇️ Downloading and extracting Holesky snapshot to $SNAP_DIR..."
+    echo "⬇️ Downloading snapshot to $SNAP_FILE..."
     mkdir -p "$SNAP_DIR"
-    curl -sL "$SNAPSHOT_URL" \
-      | tar -I zstd -xvf - -C "$SNAP_DIR"
+    curl -fsSL --retry 5 --retry-delay 5 -C - "$SNAPSHOT_URL" -o "$SNAP_FILE"
+    echo "🗜️ Extracting snapshot to $SNAP_DIR..."
+    tar -I zstd -xvf "$SNAP_FILE" -C "$SNAP_DIR"
+    rm -f "$SNAP_FILE"
     echo "✅ Snapshot extracted to $SNAP_DIR"
   else
     echo "ℹ️ Snapshot already extracted."
@@ -64,7 +67,7 @@ if [[ -n "$EVM_ADDRS" ]]; then
   UNLOCK_ARGS+=("--allow-insecure-unlock")
 fi
 
-# ---- Write docker-compose.yml with current settings ----
+# ---- Write docker-compose.yml ----
 write_compose() {
   echo "📄 Generating docker-compose.yml..."
   local TMP_FILE
@@ -83,7 +86,6 @@ services:
         hard: 65536
     command:
 EOF
-  # Base command-line arguments
   BASE_ARGS=(
     "--holesky"
     "--syncmode=snap"
@@ -109,13 +111,11 @@ EOF
   for arg in "${BASE_ARGS[@]}"; do
     echo "      - $arg" >> "$TMP_FILE"
   done
-  # Append unlock arguments if provided
   if [[ ${#UNLOCK_ARGS[@]} -gt 0 ]]; then
     for arg in "${UNLOCK_ARGS[@]}"; do
       echo "      - $arg" >> "$TMP_FILE"
     done
   fi
-  # Ports and volumes
   cat >> "$TMP_FILE" <<EOF
     ports:
       - "8545:8545"
@@ -131,7 +131,7 @@ EOF
   echo "✅ docker-compose.yml generated."
 }
 
-# ---- Start the node using Docker Compose ----
+# ---- Start the node ----
 start_node() {
   echo "🚀 Starting Holesky RPC node..."
   cd "$DATA_DIR"
@@ -141,12 +141,10 @@ start_node() {
 }
 
 # ---- Main execution ----
-echo "=== Installing and starting Holesky RPC node with current settings ==="
+ echo "=== Installing and starting Holesky RPC node with current settings ==="
 install_docker
 mkdir -p "$DATA_DIR/geth-data/holesky/geth"
 generate_jwt
 download_snapshot
 write_compose
 start_node
-echo "=== Holesky RPC node setup complete! ==="
-echo "You can access the RPC at http://localhost:8545"
