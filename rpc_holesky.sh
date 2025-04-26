@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # === Holesky Full Archive + Beacon Setup Script ===
-# Automatically installs Docker, optionally downloads snapshot, generates JWT, renders Compose, and launches Geth & Teku.
+# Installs Docker, handles snapshot & data wipe, generates JWT, renders Compose, and launches Geth & Teku.
 
 # ---- Configuration ----
 DATA_DIR="$HOME/holesky-node"
@@ -34,54 +34,64 @@ install_docker() {
   fi
 }
 
-# ---- 2) Prompt whether to use snapshot ----
+# ---- 2) Prompt for snapshot usage ----
 prompt_snapshot() {
   read -rp "Download and apply snapshot to speed up sync? [Y/n]: " ans
   if [[ "$ans" =~ ^[Nn] ]]; then
     USE_SNAPSHOT=0
-    echo "⚠️ Skipping snapshot download; sync will start from genesis and take significantly longer."
+    echo "⚠️ Skipping snapshot download; sync will start from genesis and take much longer."
   else
     echo "⬇️ Snapshot will be downloaded."
   fi
 }
 
-# ---- 3) Generate JWT secret ----
+# ---- 3) Prompt to wipe old Geth data ----
+prompt_wipe() {
+  local DIR="$DATA_DIR/geth-data/holesky"
+  if [[ -d "$DIR/geth/chaindata" ]]; then
+    read -rp "Existing Geth data found; wipe to avoid state-scheme mismatch? [Y/n]: " wipe_ans
+    if [[ ! "$wipe_ans" =~ ^[Nn] ]]; then
+      echo "🗑️ Wiping old Geth data..."
+      rm -rf "$DATA_DIR/geth-data/holesky"
+    else
+      echo "⚠️ Keeping existing data; ensure state.scheme matches original scheme."
+    fi
+  fi
+}
+
+# ---- 4) Prompt for proposer fee-recipient ----
+prompt_fee_recipient() {
+  read -rp "Enter validator proposer default fee-recipient (0x...; leave empty to skip): " FEE_RECIPIENT
+}
+
+# ---- 5) Generate JWT secret ----
 generate_jwt() {
   mkdir -p "$JWT_DIR"
   if [[ ! -f "$JWT_FILE" ]]; then
     echo "🔑 Generating JWT secret..."
     openssl rand -hex 32 > "$JWT_FILE"
-    echo "✅ JWT secret saved to $JWT_FILE"
+    echo "✅ JWT saved to $JWT_FILE"
   else
     echo "ℹ️ JWT secret already exists."
   fi
 }
 
-# ---- 4) Download & extract Holesky snapshot ----
+# ---- 6) Download & extract snapshot ----
 download_snapshot() {
   if (( USE_SNAPSHOT )); then
     local SNAP_DIR="$DATA_DIR/geth-data/holesky/geth"
     local SNAP_FILE="$DATA_DIR/snapshot.tar.zst"
-    if [[ ! -d "$SNAP_DIR/chaindata" ]]; then
-      echo "⬇️ Downloading snapshot to $SNAP_FILE..."
-      mkdir -p "$SNAP_DIR"
-      curl -fsSL --retry 5 --retry-delay 5 -C - "$SNAPSHOT_URL" -o "$SNAP_FILE"
-      echo "🗜️ Extracting snapshot..."
-      tar -I zstd -xvf "$SNAP_FILE" -C "$SNAP_DIR"
-      rm -f "$SNAP_FILE"
-      echo "✅ Snapshot extracted."
-    else
-      echo "ℹ️ Snapshot already in place."
-    fi
+    echo "⬇️ Downloading snapshot to $SNAP_FILE..."
+    mkdir -p "$SNAP_DIR"
+    curl -fsSL --retry 5 --retry-delay 5 -C - "$SNAPSHOT_URL" -o "$SNAP_FILE"
+    echo "🗜️ Extracting snapshot..."
+    tar -I zstd -xvf "$SNAP_FILE" -C "$SNAP_DIR"
+    rm -f "$SNAP_FILE"
+    echo "✅ Snapshot extracted."
   fi
 }
 
-# ---- 5) Prompt for proposer fee-recipient ----
-prompt_fee_recipient() {
-  read -rp "Enter your validator proposer default fee-recipient address (0x...; leave empty to skip): " FEE_RECIPIENT
-}
-
-# ---- 6) Render docker-compose.yml ----
+# ---- 7) Write docker-compose.yml ----
 write_compose() {
   echo "📄 Writing $COMPOSE_FILE…"
   mkdir -p "$DATA_DIR"
@@ -155,20 +165,21 @@ EOF
   echo "✅ docker-compose.yml written."
 }
 
-# ---- 7) Launch everything ----
-start_node() {
-  echo "🚀 Bringing containers up…"
+# ---- 8) Launch stack ----
+start_stack() {
+  echo "🚀 Launching Holesky containers..."
   cd "$DATA_DIR"
   docker compose up -d
-  echo "✅ All set – streaming logs. ^C to stop:"
+  echo "✅ Containers up. Streaming logs (Ctrl+C to exit):"
   docker compose logs -f holesky-geth holesky-teku
 }
 
-# ---- Main flow ----
+# ---- Main Flow ----
 install_docker
 prompt_snapshot
+prompt_wipe
 prompt_fee_recipient
 generate_jwt
 download_snapshot
 write_compose
-start_node
+start_stack
