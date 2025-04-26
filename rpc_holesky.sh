@@ -5,7 +5,6 @@ set -euo pipefail
 DATA_DIR="$HOME/holesky-node"
 COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
 JWT_FILE="$DATA_DIR/jwtsecret"
-SNAPSHOT_URL="https://snapshots.ethpandaops.io/holesky/geth/latest/snapshot.tar.zst"
 
 # ---- Install Docker if missing ----
 install_docker() {
@@ -39,21 +38,17 @@ generate_jwt() {
   fi
 }
 
-# ---- Robust download and extract snapshot ----
-download_snapshot() {
-  local SNAP_DIR="$DATA_DIR/geth-data/holesky/geth"
-  local SNAP_FILE="$DATA_DIR/snapshot.tar.zst"
-  if [[ ! -d "$SNAP_DIR/chaindata" ]]; then
-    echo "⬇️ Downloading snapshot to $SNAP_FILE..."
-    mkdir -p "$SNAP_DIR"
-    curl -fsSL --retry 5 --retry-delay 5 -C - "$SNAPSHOT_URL" -o "$SNAP_FILE"
-    echo "🗜️ Extracting snapshot to $SNAP_DIR..."
-    tar -I zstd -xvf "$SNAP_FILE" -C "$SNAP_DIR"
-    rm -f "$SNAP_FILE"
-    echo "✅ Snapshot extracted to $SNAP_DIR"
+# ---- Determine Geth cache based on system memory ----
+determine_cache() {
+  local total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  if (( total_kb >= 32768000 )); then
+    CACHE=16384
+  elif (( total_kb >= 16384000 )); then
+    CACHE=8192
   else
-    echo "ℹ️ Snapshot already extracted."
+    CACHE=4096
   fi
+  echo "ℹ️ Setting Geth cache to $CACHE MiB based on system RAM"
 }
 
 # ---- Read optional EVM addresses for unlocking ----
@@ -88,16 +83,15 @@ services:
 EOF
   BASE_ARGS=(
     "--holesky"
-    "--syncmode=snap"
-    "--cache=4096"
-    "--maxpeers=100"
+    "--syncmode=full"
+    "--gcmode=archive"
+    "--cache=$CACHE"
+    "--maxpeers=200"
     "--bootnodes=enode://ac906289e4b7f12df423d654c5a962b6ebe5b3a74cc9e06292a85221f9a64a6f1cfdd6b714ed6dacef51578f92b34c60ee91e9ede9c7f8fadc4d347326d95e2b@146.190.13.128:30303,enode://a3435a0155a3e837c02f5e7f5662a2f1fbc25b48e4dc232016e1c51b544cb5b4510ef633ea3278c0e970fa8a"
     "--http"
-    "--port=30303"
-    "--nat=extip:88.99.209.50"
     "--http.addr=0.0.0.0"
     "--http.port=8545"
-    "--http.api=eth,net,web3,txpool"
+    "--http.api=eth,net,web3,txpool,debug,admin"
     "--http.corsdomain=*"
     "--http.vhosts=*"
     "--ws"
@@ -107,6 +101,8 @@ EOF
     "--authrpc.addr=0.0.0.0"
     "--authrpc.port=8551"
     "--authrpc.jwtsecret=/root/.ethereum/jwtsecret"
+    "--authrpc.corsdomain=*"
+    "--authrpc.vhosts=*"
   )
   for arg in "${BASE_ARGS[@]}"; do
     echo "      - $arg" >> "$TMP_FILE"
@@ -133,7 +129,7 @@ EOF
 
 # ---- Start the node ----
 start_node() {
-  echo "🚀 Starting Holesky RPC node..."
+  echo "🚀 Starting Holesky archive node..."
   cd "$DATA_DIR"
   docker compose up -d
   echo "✅ Node started. Logs:"
@@ -141,10 +137,10 @@ start_node() {
 }
 
 # ---- Main execution ----
- echo "=== Installing and starting Holesky RPC node with current settings ==="
+ echo "=== Installing and starting Holesky full+archive node with accelerated settings ==="
 install_docker
-mkdir -p "$DATA_DIR/geth-data/holesky/geth"
+mkdir -p "$DATA_DIR/geth-data"
+determine_cache
 generate_jwt
-download_snapshot
 write_compose
 start_node
