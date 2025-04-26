@@ -7,6 +7,9 @@ COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
 JWT_DIR="$DATA_DIR/jwtsecret"
 JWT_FILE="$JWT_DIR/jwtsecret"
 
+# ---- Ensure directories exist ----
+mkdir -p "$DATA_DIR/geth-data" "$JWT_DIR"
+
 # ---- Install Docker if missing ----
 install_docker() {
   if ! command -v docker &>/dev/null; then
@@ -30,7 +33,6 @@ install_docker() {
 
 # ---- Generate JWT secret ----
 generate_jwt() {
-  mkdir -p "$JWT_DIR"
   if [[ ! -f "$JWT_FILE" ]]; then
     echo "🔑 Generating JWT secret..."
     openssl rand -hex 32 > "$JWT_FILE"
@@ -83,13 +85,15 @@ services:
         hard: 65536
     command:
 EOF
+
+  # Base command arguments
   BASE_ARGS=(
     "--holesky"
     "--syncmode=full"
     "--gcmode=archive"
     "--cache=$CACHE"
     "--maxpeers=200"
-    # Only one valid bootnode below
+    # Only one valid bootnode entry
     "--bootnodes=enode://ac906289e4b7f12df423d654c5a962b6ebe5b3a74cc9e06292a85221f9a64a6f1cfdd6b714ed6dacef51578f92b34c60ee91e9ede9c7f8fadc4d347326d95e2b@146.190.13.128:30303"
     "--http"
     "--http.addr=0.0.0.0"
@@ -105,14 +109,20 @@ EOF
     "--authrpc.port=8551"
     "--authrpc.jwtsecret=/root/.ethereum/jwtsecret"
   )
+
+  # Append base args
   for arg in "${BASE_ARGS[@]}"; do
     echo "      - $arg" >> "$TMP_FILE"
   done
+
+  # Append unlock args if any
   if [[ ${#UNLOCK_ARGS[@]} -gt 0 ]]; then
     for arg in "${UNLOCK_ARGS[@]}"; do
       echo "      - $arg" >> "$TMP_FILE"
     done
   fi
+
+  # Ports and volumes
   cat >> "$TMP_FILE" <<EOF
     ports:
       - "8545:8545"
@@ -124,23 +134,23 @@ EOF
       - ./geth-data:/root/.ethereum
       - ./jwtsecret:/root/.ethereum/jwtsecret
 EOF
+
   mv "$TMP_FILE" "$COMPOSE_FILE"
   echo "✅ docker-compose.yml generated."
 }
 
 # ---- Start the node ----
 start_node() {
-  echo "🚀 Starting Holesky archive node..."
+  echo "🚀 Starting Holesky full+archive node..."
   cd "$DATA_DIR"
   docker compose up -d
   echo "✅ Node started. Logs:"
   docker logs -f holesky-geth
 }
 
-# ---- Main execution ----
- echo "=== Installing and starting Holesky full+archive node with accelerated settings ==="
+# ---- Main Execution ----
+echo "=== Installing and starting Holesky full+archive node with accelerated settings ==="
 install_docker
-mkdir -p "$DATA_DIR/geth-data"
 determine_cache
 generate_jwt
 write_compose
