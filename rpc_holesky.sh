@@ -4,7 +4,8 @@ set -euo pipefail
 # ---- Configuration ----
 DATA_DIR="$HOME/holesky-node"
 COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
-JWT_FILE="$DATA_DIR/jwtsecret"
+JWT_DIR="$DATA_DIR/jwtsecret"
+JWT_FILE="$JWT_DIR/jwtsecret"
 
 # ---- Install Docker if missing ----
 install_docker() {
