@@ -63,9 +63,9 @@ download_snapshot() {
 determine_cache() {
   local total_kb
   total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-  if (( total_kb >= 32_000_000 )); then
+  if (( total_kb >= 32000000 )); then
     CACHE=16384
-  elif (( total_kb >= 16_000_000 )); then
+  elif (( total_kb >= 16000000 )); then
     CACHE=8192
   else
     CACHE=4096
