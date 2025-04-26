@@ -101,8 +101,6 @@ EOF
     "--authrpc.addr=0.0.0.0"
     "--authrpc.port=8551"
     "--authrpc.jwtsecret=/root/.ethereum/jwtsecret"
-    "--authrpc.corsdomain=*"
-    "--authrpc.vhosts=*"
   )
   for arg in "${BASE_ARGS[@]}"; do
     echo "      - $arg" >> "$TMP_FILE"
