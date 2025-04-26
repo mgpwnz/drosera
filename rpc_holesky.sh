@@ -11,10 +11,9 @@ TEKU_DATA="$DATA_DIR/teku-data"
 # ---- Prepare directories ----
 mkdir -p "$DATA_DIR/geth-data" \
          "$JWT_DIR" \
-         "$TEKU_DATA" \
          "$TEKU_DATA/logs" \
          "$TEKU_DATA/validator/slashprotection"
-# Set permissions for Teku data
+# Ensure Teku can write logs and slash protection
 chmod -R 777 "$TEKU_DATA"
 
 # ---- Install Docker if missing ----
@@ -24,8 +23,10 @@ install_docker() {
     sudo apt-get update
     sudo apt-get install -y ca-certificates curl gnupg lsb-release
     sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+      | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
       | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get update
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
@@ -47,7 +48,7 @@ generate_jwt() {
   fi
 }
 
-# ---- Determine cache based on RAM ----
+# ---- Determine Geth cache based on RAM ----
 determine_cache() {
   local total_kb
   total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
@@ -81,7 +82,7 @@ write_compose() {
 version: "3.8"
 
 services:
-  # Execution client: Geth
+  # Execution client: Geth (full + archive)
   holesky-geth:
     image: ethereum/client-go:stable
     container_name: holesky-geth
@@ -129,8 +130,8 @@ EOF
       - "30303:30303"
       - "30303:30303/udp"
     volumes:
-      - ./geth-data:/root/.ethereum
-      - ./jwtsecret/jwtsecret:/root/.ethereum/jwtsecret:ro
+      - geth-data:/root/.ethereum
+      - jwtsecret:/root/.ethereum/jwtsecret:ro
 
   # Consensus client: Teku
   teku:
@@ -150,12 +151,13 @@ EOF
       - --p2p-enabled
       - --p2p-port=9000
     volumes:
-      - ./teku-data:/var/lib/teku
-      - ./jwtsecret/jwtsecret:/var/lib/teku/jwtsecret:ro
+      - teku-data:/var/lib/teku
+      - jwtsecret:/var/lib/teku/jwtsecret:ro
 
 volumes:
-  teku-data:
   geth-data:
+  teku-data:
+  jwtsecret:
 EOF
   mv "$tmp" "$COMPOSE_FILE"
   echo "✅ docker-compose.yml generated."
@@ -163,10 +165,10 @@ EOF
 
 # ---- Start node ----
 start_node() {
-  echo "🚀 Launching Holesky Full+Archive Node with Consensus..."
+  echo "🚀 Launching services..."
   cd "$DATA_DIR"
   docker compose up -d
-  echo "✅ Containers started. Following logs..."
+  echo "✅ Containers started. Following logs of Geth..."
   docker logs -f holesky-geth
 }
 
