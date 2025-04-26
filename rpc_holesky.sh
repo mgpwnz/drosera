@@ -10,6 +10,9 @@ TEKU_DATA="$DATA_DIR/teku-data"
 
 # ---- Prepare directories ----
 mkdir -p "$DATA_DIR/geth-data" "$JWT_DIR" "$TEKU_DATA"
+# Ensure Teku log directory exists and is writable
+mkdir -p "$TEKU_DATA/logs"
+chmod 777 "$TEKU_DATA/logs"
 
 # ---- Install Docker if missing ----
 install_docker() {
