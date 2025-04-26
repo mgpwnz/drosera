@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# === Holesky Full Archive + Beacon Setup Script ===
+# Automatically installs Docker, optionally downloads snapshot, generates JWT, renders Compose, and launches Geth & Teku.
+
 # ---- Configuration ----
 DATA_DIR="$HOME/holesky-node"
 COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
 JWT_DIR="$DATA_DIR/jwtsecret"
 JWT_FILE="$JWT_DIR/jwtsecret"
 SNAPSHOT_URL="https://snapshots.ethpandaops.io/holesky/geth/latest/snapshot.tar.zst"
+USE_SNAPSHOT=1
 
 # ---- 1) Install Docker if missing ----
 install_docker() {
@@ -30,7 +34,18 @@ install_docker() {
   fi
 }
 
-# ---- 2) Generate JWT secret ----
+# ---- 2) Prompt whether to use snapshot ----
+prompt_snapshot() {
+  read -rp "Download and apply snapshot to speed up sync? [Y/n]: " ans
+  if [[ "$ans" =~ ^[Nn] ]]; then
+    USE_SNAPSHOT=0
+    echo "⚠️ Skipping snapshot download; sync will start from genesis and take significantly longer."
+  else
+    echo "⬇️ Snapshot will be downloaded."
+  fi
+}
+
+# ---- 3) Generate JWT secret ----
 generate_jwt() {
   mkdir -p "$JWT_DIR"
   if [[ ! -f "$JWT_FILE" ]]; then
@@ -42,43 +57,35 @@ generate_jwt() {
   fi
 }
 
-# ---- 3) Download & extract Holesky snapshot ----
+# ---- 4) Download & extract Holesky snapshot ----
 download_snapshot() {
-  local SNAP_DIR="$DATA_DIR/geth-data/holesky/geth"
-  local SNAP_FILE="$DATA_DIR/snapshot.tar.zst"
-  if [[ ! -d "$SNAP_DIR/chaindata" ]]; then
-    echo "⬇️ Downloading snapshot to $SNAP_FILE..."
-    mkdir -p "$SNAP_DIR"
-    curl -fsSL --retry 5 --retry-delay 5 -C - "$SNAPSHOT_URL" -o "$SNAP_FILE"
-    echo "🗜️ Extracting snapshot to $SNAP_DIR..."
-    tar -I zstd -xvf "$SNAP_FILE" -C "$SNAP_DIR"
-    rm -f "$SNAP_FILE"
-    echo "✅ Snapshot extracted."
-  else
-    echo "ℹ️ Snapshot already in place."
+  if (( USE_SNAPSHOT )); then
+    local SNAP_DIR="$DATA_DIR/geth-data/holesky/geth"
+    local SNAP_FILE="$DATA_DIR/snapshot.tar.zst"
+    if [[ ! -d "$SNAP_DIR/chaindata" ]]; then
+      echo "⬇️ Downloading snapshot to $SNAP_FILE..."
+      mkdir -p "$SNAP_DIR"
+      curl -fsSL --retry 5 --retry-delay 5 -C - "$SNAPSHOT_URL" -o "$SNAP_FILE"
+      echo "🗜️ Extracting snapshot..."
+      tar -I zstd -xvf "$SNAP_FILE" -C "$SNAP_DIR"
+      rm -f "$SNAP_FILE"
+      echo "✅ Snapshot extracted."
+    else
+      echo "ℹ️ Snapshot already in place."
+    fi
   fi
 }
 
-# ---- 4) Auto-tune Geth cache by RAM ----
-determine_cache() {
-  local total_kb
-  total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-  if (( total_kb >= 32000000 )); then
-    CACHE=16384
-  elif (( total_kb >= 16000000 )); then
-    CACHE=8192
-  else
-    CACHE=4096
-  fi
-  echo "ℹ️ Geth cache set to ${CACHE} MiB."
+# ---- 5) Prompt for proposer fee-recipient ----
+prompt_fee_recipient() {
+  read -rp "Enter your validator proposer default fee-recipient address (0x...; leave empty to skip): " FEE_RECIPIENT
 }
 
-# ---- 5) Render docker-compose.yml ----
+# ---- 6) Render docker-compose.yml ----
 write_compose() {
   echo "📄 Writing $COMPOSE_FILE…"
   mkdir -p "$DATA_DIR"
   cat > "$COMPOSE_FILE" <<EOF
-version: "3.8"
 services:
 
   geth:
@@ -93,7 +100,8 @@ services:
       - --holesky
       - --syncmode=full
       - --gcmode=archive
-      - --cache=${CACHE}
+      - --state.scheme=path
+      - --cache=8192
       - --maxpeers=200
       - --bootnodes=enode://ac906289e4b7f12df423d654c5a962b6ebe5b3a74cc9e06292a85221f9a64a6f1cfdd6b714ed6dacef51578f92b34c60ee91e9ede9c7f8fadc4d347326d95e2b@146.190.13.128:30303
       - --http
@@ -127,10 +135,14 @@ services:
     depends_on:
       - geth
     command:
-      - beacon-node
       - --network=holesky
       - --ee-endpoint=http://geth:8551
-      - --ee-jwt-file=/opt/teku/jwtsecret
+      - --ee-jwt-secret-file=/opt/teku/jwtsecret
+EOF
+  if [[ -n "${FEE_RECIPIENT:-}" ]]; then
+    echo "      - --validators-proposer-default-fee-recipient=$FEE_RECIPIENT" >> "$COMPOSE_FILE"
+  fi
+  cat >> "$COMPOSE_FILE" <<EOF
       - --rest-api-enabled
       - --rest-api-interface=0.0.0.0
       - --rest-api-port=5051
@@ -143,19 +155,19 @@ EOF
   echo "✅ docker-compose.yml written."
 }
 
-# ---- 6) Launch everything ----
+# ---- 7) Launch everything ----
 start_node() {
   echo "🚀 Bringing containers up…"
   cd "$DATA_DIR"
   docker compose up -d
   echo "✅ All set – streaming logs. ^C to stop:"
-  docker logs -f holesky-geth holesky-teku
+  docker compose logs -f holesky-geth holesky-teku
 }
 
 # ---- Main flow ----
-echo "=== Holesky Full + Archive Script ==="
 install_docker
-determine_cache
+prompt_snapshot
+prompt_fee_recipient
 generate_jwt
 download_snapshot
 write_compose
