@@ -6,9 +6,10 @@ DATA_DIR="$HOME/holesky-node"
 COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
 JWT_DIR="$DATA_DIR/jwtsecret"
 JWT_FILE="$JWT_DIR/jwtsecret"
+TEKU_DATA="$DATA_DIR/teku-data"
 
 # ---- Prepare directories ----
-mkdir -p "$DATA_DIR/geth-data" "$JWT_DIR"
+mkdir -p "$DATA_DIR/geth-data" "$JWT_DIR" "$TEKU_DATA"
 
 # ---- Install Docker if missing ----
 install_docker() {
@@ -17,10 +18,8 @@ install_docker() {
     sudo apt-get update
     sudo apt-get install -y ca-certificates curl gnupg lsb-release
     sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-      | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
       | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get update
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
@@ -76,6 +75,7 @@ write_compose() {
 version: "3.8"
 
 services:
+  # Execution client: Geth
   holesky-geth:
     image: ethereum/client-go:stable
     container_name: holesky-geth
@@ -86,7 +86,7 @@ services:
         hard: 65536
     command:
 EOF
-  local args=(
+  local geth_args=(
     "--holesky"
     "--syncmode=full"
     "--gcmode=archive"
@@ -107,8 +107,8 @@ EOF
     "--authrpc.port=8551"
     "--authrpc.jwtsecret=/root/.ethereum/jwtsecret/jwtsecret"
   )
-  for a in "${args[@]}"; do
-    echo "      - $a" >>"$tmp"
+  for arg in "${geth_args[@]}"; do
+    echo "      - $arg" >>"$tmp"
   done
   if (( ${#UNLOCK_ARGS[@]} > 0 )); then
     for u in "${UNLOCK_ARGS[@]}"; do
@@ -125,6 +125,31 @@ EOF
     volumes:
       - ./geth-data:/root/.ethereum
       - ./jwtsecret:/root/.ethereum/jwtsecret
+
+  # Consensus client: Teku
+  teku:
+    image: consensys/teku:latest
+    container_name: teku
+    restart: unless-stopped
+    ports:
+      - "5051:5051"   # REST API port
+      - "9000:9000"   # P2P port
+    command:
+      - --network=holesky
+      - --data-path=/var/lib/teku
+      - --ee-endpoint=http://holesky-geth:8551
+      - --ee-jwt-secret-file=/var/lib/teku/jwtsecret
+      - --rest-api-enabled
+      - --rest-api-port=5051
+      - --p2p-enabled
+      - --p2p-port=9000
+    volumes:
+      - ./teku-data:/var/lib/teku
+      - ./jwtsecret:/var/lib/teku/jwtsecret
+
+volumes:
+  teku-data:
+  geth-data:
 EOF
   mv "$tmp" "$COMPOSE_FILE"
   echo "✅ docker-compose.yml generated."
@@ -132,15 +157,15 @@ EOF
 
 # ---- Start node ----
 start_node() {
-  echo "🚀 Launching Holesky full+archive node..."
+  echo "🚀 Launching Holesky Full+Archive Node with Consensus..."
   cd "$DATA_DIR"
   docker compose up -d
-  echo "✅ Node started. Following logs..."
+  echo "✅ Containers started. Following logs..."
   docker logs -f holesky-geth
 }
 
 # ---- Main ----
-echo "=== Holesky Full+Archive Node Setup ==="
+echo "=== Holesky Full+Archive Node & Teku Consensus Setup ==="
 install_docker
 determine_cache
 generate_jwt
