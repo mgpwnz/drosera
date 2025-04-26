@@ -148,7 +148,7 @@ EOF
       - --p2p-port=9000
     volumes:
       - ./teku-data:/var/lib/teku
-      - ./jwtsecret:/var/lib/teku/jwtsecret
+      - ./jwtsecret/jwtsecret:/var/lib/teku/jwtsecret:ro
 
 volumes:
   teku-data:
