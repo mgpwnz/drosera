@@ -7,7 +7,7 @@ COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
 JWT_DIR="$DATA_DIR/jwtsecret"
 JWT_FILE="$JWT_DIR/jwtsecret"
 
-# ---- Ensure directories exist ----
+# ---- Prepare directories ----
 mkdir -p "$DATA_DIR/geth-data" "$JWT_DIR"
 
 # ---- Install Docker if missing ----
@@ -42,9 +42,10 @@ generate_jwt() {
   fi
 }
 
-# ---- Determine Geth cache based on system memory ----
+# ---- Determine cache based on RAM ----
 determine_cache() {
-  local total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  local total_kb
+  total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
   if (( total_kb >= 32768000 )); then
     CACHE=16384
   elif (( total_kb >= 16384000 )); then
@@ -52,10 +53,10 @@ determine_cache() {
   else
     CACHE=4096
   fi
-  echo "ℹ️ Setting Geth cache to $CACHE MiB based on system RAM"
+  echo "ℹ️ Geth cache set to $CACHE MiB"
 }
 
-# ---- Read optional EVM addresses for unlocking ----
+# ---- Read optional unlock addresses ----
 read -p "Enter EVM addresses to unlock (comma-separated, leave blank to skip): " EVM_ADDRS
 UNLOCK_ARGS=()
 if [[ -n "$EVM_ADDRS" ]]; then
@@ -69,9 +70,9 @@ fi
 # ---- Write docker-compose.yml ----
 write_compose() {
   echo "📄 Generating docker-compose.yml..."
-  local TMP_FILE
-  TMP_FILE=$(mktemp)
-  cat > "$TMP_FILE" <<EOF
+  local tmp
+  tmp=$(mktemp)
+  cat >"$tmp" <<EOF
 version: "3.8"
 
 services:
@@ -85,15 +86,12 @@ services:
         hard: 65536
     command:
 EOF
-
-  # Base command arguments
-  BASE_ARGS=(
+  local args=(
     "--holesky"
     "--syncmode=full"
     "--gcmode=archive"
     "--cache=$CACHE"
     "--maxpeers=200"
-    # Only one valid bootnode entry
     "--bootnodes=enode://ac906289e4b7f12df423d654c5a962b6ebe5b3a74cc9e06292a85221f9a64a6f1cfdd6b714ed6dacef51578f92b34c60ee91e9ede9c7f8fadc4d347326d95e2b@146.190.13.128:30303"
     "--http"
     "--http.addr=0.0.0.0"
@@ -107,4 +105,44 @@ EOF
     "--ws.api=eth,net,web3"
     "--authrpc.addr=0.0.0.0"
     "--authrpc.port=8551"
-    "--authrpc.jwtsecret=/root/.ethereum/jwtsecret/jwtsecret
+    "--authrpc.jwtsecret=/root/.ethereum/jwtsecret/jwtsecret"
+  )
+  for a in "${args[@]}"; do
+    echo "      - $a" >>"$tmp"
+  done
+  if (( ${#UNLOCK_ARGS[@]} > 0 )); then
+    for u in "${UNLOCK_ARGS[@]}"; do
+      echo "      - $u" >>"$tmp"
+    done
+  fi
+  cat >>"$tmp" <<EOF
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+      - "8551:8551"
+      - "30303:30303"
+      - "30303:30303/udp"
+    volumes:
+      - ./geth-data:/root/.ethereum
+      - ./jwtsecret:/root/.ethereum/jwtsecret
+EOF
+  mv "$tmp" "$COMPOSE_FILE"
+  echo "✅ docker-compose.yml generated."
+}
+
+# ---- Start node ----
+start_node() {
+  echo "🚀 Launching Holesky full+archive node..."
+  cd "$DATA_DIR"
+  docker compose up -d
+  echo "✅ Node started. Following logs..."
+  docker logs -f holesky-geth
+}
+
+# ---- Main ----
+echo "=== Holesky Full+Archive Node Setup ==="
+install_docker
+determine_cache
+generate_jwt
+write_compose
+start_node
