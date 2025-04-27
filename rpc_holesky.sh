@@ -115,7 +115,7 @@ EOF
 
   cat >> "$COMPOSE_FILE" <<EOF
       - --gcmode=full
-      - --state.storage=path
+      - --state.scheme=path
       - --cache=8192
       - --maxpeers=200
       - --http
