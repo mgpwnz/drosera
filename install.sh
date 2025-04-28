@@ -3,7 +3,7 @@
 while true; do
 # === Главное меню ===
 PS3='Select an action: '
-options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Add Secondary Operator" "Uninstall" "Exit")
+options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Add Secondary Operator" "Change rpc" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
     case $opt in
 
@@ -308,8 +308,29 @@ EOF
         cd $HOME
         break
         ;;
-
-
+    "Change rpc")
+        echo "Select RPC to change:"
+        select rpcopt in "Main RPC" "Secondary RPC" "Back"; do
+            case $rpcopt in
+                "Main RPC")
+                    read -p "Enter new Main RPC URL: " Hol_RPC
+                    sed -i "s|^Hol_RPC=.*|Hol_RPC=\"$Hol_RPC\"|" "$ENV_FILE"
+                    break
+                    ;;
+                "Secondary RPC")
+                    read -p "Enter new Secondary RPC URL: " Hol_RPC2
+                    sed -i "s|^Hol_RPC2=.*|Hol_RPC2=\"$Hol_RPC2\"|" "$ENV_FILE"
+                    break
+                    ;;
+                "Back")
+                    break
+                    ;;
+                *) echo "Invalid option $REPLY" ;;
+            esac
+        done
+        break
+        ;;
+     
     "Uninstall")
         if [ ! -d "$HOME/Drosera" ]; then
             break
