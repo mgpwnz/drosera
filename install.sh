@@ -170,17 +170,17 @@ EOF
         select logopt in "Main Operator (drosera-node)" "Secondary Operator (drosera-node2)" "Both (combined)" "Back"; do
             case $logopt in
                 "Main Operator (drosera-node)")
-                    docker logs -f drosera-node
+                    docker logs -f drosera-node --tail 100
                     break
                     ;;
                 "Secondary Operator (drosera-node2)")
-                    docker logs -f drosera-node2
+                    docker logs -f drosera-node2 --tail 100
                     break
                     ;;
                 "Both (combined)")
                     cd "$HOME/Drosera" || { echo "❌ Drosera directory not found"; break; }
                     echo "🔎 Showing combined logs. Press Ctrl+C to stop."
-                    docker compose logs -f
+                    docker compose logs -f --tail 100
                     break
                     ;;
                 "Back")
