@@ -309,6 +309,21 @@ EOF
         break
         ;;
     "Change rpc")
+        ENV_FILE="$HOME/.env.drosera"
+        if [[ -f "$ENV_FILE" ]]; then
+            if [[ ! -f "${ENV_FILE}.bak" ]]; then
+                cp "$ENV_FILE" "${ENV_FILE}.bak"
+                echo "🔄 Backup created at ${ENV_FILE}.bak"
+            else
+                echo "🔄 Backup already exists at ${ENV_FILE}.bak"
+            fi
+        else 
+            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
+            exit 1
+        fi
+        source "$ENV_FILE"
+        echo "Current Main RPC: $Hol_RPC"
+        echo "Current Secondary RPC: $Hol_RPC2"
         echo "Select RPC to change:"
         select rpcopt in "Main RPC" "Secondary RPC" "Back"; do
             case $rpcopt in
