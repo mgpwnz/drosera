@@ -336,6 +336,55 @@ EOF
                     read -p "Enter new Secondary RPC URL: " Hol_RPC2
                     sed -i "s|^Hol_RPC2=.*|Hol_RPC2=\"$Hol_RPC2\"|" "$ENV_FILE"
                     break
+                "Reboot Containers")
+                    # Зупиняємо перший контейнер
+                    cd "$HOME/Drosera"
+                    docker compose down -v
+
+                    # Порти
+                    read -p "Enter P2P port for first operator (default: 31313): " P2P_PORT1
+                    read -p "Enter server port for first operator (default: 31314): " SERVER_PORT1
+                    read -p "Enter P2P port for second operator (default: 31315): " P2P_PORT2
+                    read -p "Enter server port for second operator (default: 31316): " SERVER_PORT2
+                    P2P_PORT1="${P2P_PORT1:-31313}"
+                    SERVER_PORT1="${SERVER_PORT1:-31314}"
+                    P2P_PORT2="${P2P_PORT2:-31315}"
+                    SERVER_PORT2="${SERVER_PORT2:-31316}"
+
+        cat > docker-compose.yml <<EOF
+version: '3'
+services:
+  drosera:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node
+    ports:
+      - "${P2P_PORT1}:31313"
+      - "${SERVER_PORT1}:31314"
+    volumes:
+      - drosera_data:/data
+    command: node --db-file-path /data/drosera.db --network-p2p-port 31313 --server-port 31314 --eth-rpc-url ${Hol_RPC} --eth-backup-rpc-url https://holesky.drpc.org --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 --eth-private-key ${private_key} --listen-address 0.0.0.0 --network-external-p2p-address ${SERVER_IP} --disable-dnr-confirmation true
+    restart: always
+
+  drosera2:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node2
+    ports:
+      - "${P2P_PORT2}:31313"
+      - "${SERVER_PORT2}:31314"
+    volumes:
+      - drosera_data2:/data
+    command: node --db-file-path /data/drosera.db --network-p2p-port 31313 --server-port 31314 --eth-rpc-url ${Hol_RPC2} --eth-backup-rpc-url https://holesky.drpc.org --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 --eth-private-key ${private_key2} --listen-address 0.0.0.0 --network-external-p2p-address ${SERVER_IP} --disable-dnr-confirmation true
+    restart: always
+
+volumes:
+  drosera_data:
+  drosera_data2:
+EOF
+
+                    docker compose up -d
+                    cd $HOME
+                    echo "🔄 Containers restarted with new RPC settings."
+                    break
                     ;;
                 "Back")
                     break
