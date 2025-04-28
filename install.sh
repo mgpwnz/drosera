@@ -336,6 +336,7 @@ EOF
                     read -p "Enter new Secondary RPC URL: " Hol_RPC2
                     sed -i "s|^Hol_RPC2=.*|Hol_RPC2=\"$Hol_RPC2\"|" "$ENV_FILE"
                     break
+                    ;;
                 "Reboot Containers")
                     # Зупиняємо перший контейнер
                     cd "$HOME/Drosera"
