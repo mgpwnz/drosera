@@ -342,6 +342,7 @@ EOF
                     ;;
                 "Apply new RPC")
                     cd "$HOME/Drosera"
+                    SERVER_IP=$(hostname -I | awk '{print $1}')
                     docker compose down -v
                     read -p "Enter P2P port for first operator (default: 31313): " P2P_PORT1
                     read -p "Enter server port for first operator (default: 31314): " SERVER_PORT1
