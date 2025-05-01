@@ -341,14 +341,6 @@ EOF
                     cd "$HOME/Drosera"
                     SERVER_IP=$(hostname -I | awk '{print $1}')
                     docker compose down -v
-                    read -p "Enter P2P port for first operator (default: 31313): " P2P_PORT1
-                    read -p "Enter server port for first operator (default: 31314): " SERVER_PORT1
-                    read -p "Enter P2P port for second operator (default: 31315): " P2P_PORT2
-                    read -p "Enter server port for second operator (default: 31316): " SERVER_PORT2
-                    P2P_PORT1="${P2P_PORT1:-31313}"
-                    SERVER_PORT1="${SERVER_PORT1:-31314}"
-                    P2P_PORT2="${P2P_PORT2:-31315}"
-                    SERVER_PORT2="${SERVER_PORT2:-31316}"
                     cat > docker-compose.yml <<EOF
 version: '3'
 services:
