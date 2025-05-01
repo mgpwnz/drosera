@@ -1,7 +1,7 @@
 #!/bin/bash
 
 while true; do
-# === Главное меню ===
+# === MAIN ===
 PS3='Select an action: '
 options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Add Secondary Operator" "Change rpc" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
@@ -13,22 +13,22 @@ select opt in "${options[@]}"; do
         ;;
 
         "Setup & Deploy Trap")
-        # === Установка CLI ===
+        # === Install CLI ===
         curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
         curl -L https://foundry.paradigm.xyz | bash || { echo "❌ Foundry install failed"; exit 1; }
         curl -fsSL https://bun.sh/install | bash || { echo "❌ Bun install failed"; exit 1; }
 
-        # === Додаємо CLI шляхи до PATH (bashrc) ===
+        # === Add CLI to PATH (bashrc) ===
         for dir in "$HOME/.drosera/bin" "$HOME/.foundry/bin" "$HOME/.bun/bin"; do
             grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
         done
         source "$HOME/.bashrc"
 
-        # === Запускаємо оновлення CLI ===
+        # === Run update CLI ===
         "$HOME/.drosera/bin/droseraup"
         "$HOME/.foundry/bin/foundryup"
 
-        # === Завантаження або створення .env конфігурації ===
+        # === Create env ===
         ENV_FILE="$HOME/.env.drosera"
         [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
 
@@ -60,7 +60,7 @@ select opt in "${options[@]}"; do
 
         echo "🔁 Используется конфигурация из $ENV_FILE"
 
-        # === Створення і компіляція Trap ===
+        # === Create Trap ===
         mkdir -p "$HOME/my-drosera-trap"
         cd "$HOME/my-drosera-trap"
 
@@ -123,7 +123,6 @@ EOF
         curl -LO https://github.com/drosera-network/releases/releases/download/v1.16.2/drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
         tar -xvf drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz && rm -f drosera-operator-v1.16.2-x86_64-unknown-linux-gnu.tar.gz
 
-        # Пошук двійкового файлу після розпакування
         OPERATOR_BIN=$(find . -type f -name "drosera-operator" | head -n 1)
 
         if [[ ! -x "$OPERATOR_BIN" ]]; then
@@ -208,11 +207,9 @@ EOF
     "Add Secondary Operator") 
         SERVER_IP=$(hostname -I | awk '{print $1}')
         ENV_FILE="$HOME/.env.drosera"
-
-        # === Читаємо вже існуючі значення, якщо є ===
         [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
 
-        # === Зчитуємо ключі, якщо вони ще не задані ===
+        # === Read PK ===
         if [[ -z "$private_key2" ]]; then
             read -p "Enter your private key2: " private_key2
             echo "private_key2=\"$private_key2\"" >> "$ENV_FILE"
@@ -229,7 +226,7 @@ EOF
             echo "Hol_RPC2=\"$Hol_RPC2\"" >> "$ENV_FILE"
         fi
 
-        # === Оновлюємо drosera.toml whitelist ===
+        # === Update drosera.toml whitelist ===
         cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
 
         sed -i '/^private/d' drosera.toml
@@ -260,7 +257,7 @@ EOF
         echo "🚀 Виконую: $OPERATOR_BIN register ..."
         "$OPERATOR_BIN" register --eth-rpc-url "$Hol_RPC2" --eth-private-key "$private_key2"
 
-        # Зупиняємо перший контейнер
+        # Stop and remove existing containers
         cd "$HOME/Drosera"
         docker compose down -v
 
@@ -437,7 +434,8 @@ EOF
                 rm -rf "$HOME/Drosera"
                 ;;
             *)
-                echo "❌ Операция отменена"
+                echo "❌ Cancelled"
+                echo "Drosera directory not removed."
                 ;;
         esac
         break
