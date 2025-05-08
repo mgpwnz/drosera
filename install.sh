@@ -152,9 +152,9 @@ EOF
 
         cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
 
-        sed -i \
-            's|^drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_team = "https://relayer.testnet.drosera.io/"|' \
-            drosera.toml
+        # === Update drosera.toml whitelist ===
+        sed -i 's|drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_team = "https://relay.testnet.drosera.io"|' drosera.toml
+
 
         if [[ -n "$Hol_RPC" ]]; then
             DROSERA_PRIVATE_KEY="$private_key" \
