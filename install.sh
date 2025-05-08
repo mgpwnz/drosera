@@ -135,6 +135,13 @@ EOF
         break
         ;;
     "Update CLI operator")
+        cd "$HOME/Drosera"
+        docker compose down -v
+        cd $HOME
+        
+        curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+
+
         ENV_FILE="$HOME/.env.drosera"
         if [[ ! -f "$ENV_FILE" ]]; then
             echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
@@ -145,7 +152,7 @@ EOF
         cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
 
         sed -i \
-            's|^drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_rpc = "https://relay.testnet.drosera.io"|' \
+            's|^drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_team = "https://relayer.testnet.drosera.io/"|' \
             drosera.toml
 
         if [[ -n "$Hol_RPC" ]]; then
@@ -155,6 +162,8 @@ EOF
             DROSERA_PRIVATE_KEY="$private_key" \
             "$HOME/.drosera/bin/drosera" apply
         fi
+        cd "$HOME/Drosera"
+        docker compose up -d
         cd "$HOME"
         break
         ;;
