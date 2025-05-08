@@ -137,10 +137,10 @@ EOF
     "Update CLI operator")
         cd "$HOME/Drosera"
         docker compose down -v
-        cd $HOME
+        cd "$HOME"
 
         curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
-        
+
         docker pull ghcr.io/drosera-network/drosera-operator:latest
 
         ENV_FILE="$HOME/.env.drosera"
@@ -153,8 +153,15 @@ EOF
         cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
 
         # === Update drosera.toml whitelist ===
-        sed -i 's|drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_team = "https://relay.testnet.drosera.io"|' drosera.toml
-
+        if grep -q 'drosera_rpc = ' drosera.toml; then
+            # сохраняем резервную копию в drosera.toml.bak
+            sed -i.bak \
+                's|drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_team = "https://relay.testnet.drosera.io"|' \
+                drosera.toml
+            echo "✅ drosera.toml обновлён: drosera_rpc → drosera_team"
+        else
+            echo "ℹ️ drosera_rpc не найдена в drosera.toml, пропускаю замену"
+        fi
 
         if [[ -n "$Hol_RPC" ]]; then
             DROSERA_PRIVATE_KEY="$private_key" \
@@ -163,12 +170,12 @@ EOF
             DROSERA_PRIVATE_KEY="$private_key" \
             "$HOME/.drosera/bin/drosera" apply
         fi
+
         cd "$HOME/Drosera"
         docker compose up -d
         cd "$HOME"
         break
         ;;
-
 
     "RUN Drosera")
         source "$HOME/.env.drosera"
