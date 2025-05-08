@@ -3,7 +3,7 @@
 while true; do
 # === MAIN ===
 PS3='Select an action: '
-options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Add Secondary Operator" "Change rpc" "Uninstall" "Exit")
+options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Update CLI operator" "Logs" "Check" "Add Secondary Operator" "Change rpc" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
     case $opt in
 
@@ -134,6 +134,31 @@ EOF
         "$OPERATOR_BIN" register --eth-rpc-url "$Hol_RPC" --eth-private-key "$private_key"
         break
         ;;
+    "Update CLI operator")
+        ENV_FILE="$HOME/.env.drosera"
+        if [[ ! -f "$ENV_FILE" ]]; then
+            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
+            exit 1
+        fi
+        source "$ENV_FILE"
+
+        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
+
+        sed -i \
+            's|^drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_rpc = "https://relay.testnet.drosera.io"|' \
+            drosera.toml
+
+        if [[ -n "$Hol_RPC" ]]; then
+            DROSERA_PRIVATE_KEY="$private_key" \
+            "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+        else
+            DROSERA_PRIVATE_KEY="$private_key" \
+            "$HOME/.drosera/bin/drosera" apply
+        fi
+        cd "$HOME"
+        break
+        ;;
+
 
     "RUN Drosera")
         source "$HOME/.env.drosera"
