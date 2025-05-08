@@ -3,7 +3,7 @@
 while true; do
 # === MAIN ===
 PS3='Select an action: '
-options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Update CLI operator" "Logs" "Check" "Add Secondary Operator" "Change rpc" "Uninstall" "Exit")
+options=("Docker" "Setup & Deploy Trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Add Secondary Operator" "Change rpc" "Update CLI operator" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
     case $opt in
 
