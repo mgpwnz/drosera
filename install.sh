@@ -161,7 +161,7 @@ EOF
         rm -f "$ASSET"
 
         echo " $VERSION"
-        
+
         curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
 
         docker pull ghcr.io/drosera-network/drosera-operator:latest
@@ -195,6 +195,33 @@ EOF
         fi
 
         cd "$HOME/Drosera"
+        # Create new docker-compose.yml with updated configuration
+
+        cat > docker-compose.yml <<EOF
+version: '3'
+services:
+  drosera:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node
+    network_mode: host
+    volumes:
+      - drosera_data:/data
+    command: node --db-file-path /data/drosera.db --network-p2p-port 31313 --server-port 31314 --eth-rpc-url ${Hol_RPC} --eth-backup-rpc-url https://holesky.drpc.org --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 --eth-private-key ${private_key} --listen-address 0.0.0.0 --network-external-p2p-address ${SERVER_IP} --disable-dnr-confirmation true
+    restart: always
+
+  drosera2:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node2
+    network_mode: host
+    volumes:
+      - drosera_data2:/data
+    command: node --db-file-path /data/drosera.db --network-p2p-port 31315 --server-port 31316 --eth-rpc-url ${Hol_RPC2} --eth-backup-rpc-url https://holesky.drpc.org --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 --eth-private-key ${private_key2} --listen-address 0.0.0.0 --network-external-p2p-address ${SERVER_IP} --disable-dnr-confirmation true
+    restart: always
+
+volumes:
+  drosera_data:
+  drosera_data2:
+EOF
         docker compose up -d
         cd "$HOME"
         break
