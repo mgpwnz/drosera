@@ -146,6 +146,7 @@ EOF
         break
         ;;
     "Update CLI operator")
+        SERVER_IP=$(hostname -I | awk '{print $1}')
         cd "$HOME/Drosera"
         docker compose down -v
         cd "$HOME"
