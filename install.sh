@@ -138,9 +138,10 @@ EOF
         cd "$HOME/Drosera"
         docker compose down -v
         cd $HOME
-        
-        curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
 
+        curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+        
+        docker pull ghcr.io/drosera-network/drosera-operator:latest
 
         ENV_FILE="$HOME/.env.drosera"
         if [[ ! -f "$ENV_FILE" ]]; then
