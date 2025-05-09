@@ -103,9 +103,6 @@ select opt in "${options[@]}"; do
         cat >> drosera.toml <<EOF
 private_trap = true
 whitelist = ["$public_key"]
-
-[network]
-external_p2p_address = "$SERVER_IP"
 EOF
 
         if [[ -n "$Hol_RPC" ]]; then
@@ -185,7 +182,8 @@ EOF
             sed -i -e 's|^drosera_team = .*|drosera_rpc = "https://relay.testnet.drosera.io"|' \
                 -e 's|^drosera_rpc = .*|drosera_rpc = "https://relay.testnet.drosera.io"|' \
                 drosera.toml
-
+            sed -i '/^\[network\]/,$d' drosera.toml
+            sed -i '/^external_p2p_address/,$d' drosera.toml
             echo "✅ drosera.toml updated: drosera_rpc set to https://relay.testnet.drosera.io"
         else
             echo "ℹ️ drosera_team or drosera_rpc not found in drosera.toml, skipping update"
