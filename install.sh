@@ -58,7 +58,7 @@ select opt in "${options[@]}"; do
             echo "Hol_RPC=\"$Hol_RPC\"" >> "$ENV_FILE"
         fi
 
-        echo "🔁 Используется конфигурация из $ENV_FILE"
+        echo "🔁 Using conf $ENV_FILE"
 
         # === Create Trap ===
         mkdir -p "$HOME/my-drosera-trap"
@@ -88,13 +88,13 @@ select opt in "${options[@]}"; do
     "Installing and configuring the Operator")
         ENV_FILE="$HOME/.env.drosera"
         if [[ ! -f "$ENV_FILE" ]]; then
-            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
+            echo "❌ $ENV_FILE not found. Run 'Setup & Deploy Trap'."
             exit 1
         fi
         source "$ENV_FILE"
 
         SERVER_IP=$(hostname -I | awk '{print $1}')
-        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
+        cd "$HOME/my-drosera-trap" || { echo "❌ Drosera directory not found"; exit 1; }
 
         sed -i '/^private/d' drosera.toml
         sed -i '/^whitelist/d' drosera.toml
@@ -140,7 +140,7 @@ EOF
             chmod +x "$OPERATOR_BIN"
         fi
 
-        echo "🚀 Виконую: $OPERATOR_BIN register ..."
+        echo "🚀 Runinng: $OPERATOR_BIN register ..."
 
         "$OPERATOR_BIN" register --eth-rpc-url "$Hol_RPC" --eth-private-key "$private_key"
         break
@@ -169,22 +169,26 @@ EOF
 
         ENV_FILE="$HOME/.env.drosera"
         if [[ ! -f "$ENV_FILE" ]]; then
-            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
+            echo "❌ $ENV_FILE not found. Run 'Setup & Deploy Trap'."
             exit 1
         fi
         source "$ENV_FILE"
 
-        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
+        cd "$HOME/my-drosera-trap" || { echo "❌Drosera directory not found"; exit 1; }
+                
+        # === Update drosera.toml whitelist entries ===
+        if grep -qE '^(drosera_team|drosera_rpc) = ' drosera.toml; then
+            # backup original file
+            cp drosera.toml drosera.toml.bak
 
-        # === Update drosera.toml whitelist ===
-        if grep -q 'drosera_rpc = ' drosera.toml; then
-            # сохраняем резервную копию в drosera.toml.bak
-            sed -i.bak \
-                's|drosera_rpc = "https://seed-node.testnet.drosera.io"|drosera_team = "https://relay.testnet.drosera.io"|' \
+            # replace drosera_team or drosera_rpc with the desired RPC endpoint
+            sed -i -e 's|^drosera_team = .*|drosera_rpc = "https://relay.testnet.drosera.io"|' \
+                -e 's|^drosera_rpc = .*|drosera_rpc = "https://relay.testnet.drosera.io"|' \
                 drosera.toml
-            echo "✅ drosera.toml обновлён: drosera_rpc → drosera_team"
+
+            echo "✅ drosera.toml updated: drosera_rpc set to https://relay.testnet.drosera.io"
         else
-            echo "ℹ️ drosera_rpc не найдена в drosera.toml, пропускаю замену"
+            echo "ℹ️ drosera_team or drosera_rpc not found in drosera.toml, skipping update"
         fi
 
         if [[ -n "$Hol_RPC" ]]; then
@@ -318,7 +322,7 @@ EOF
         fi
 
         # === Update drosera.toml whitelist ===
-        cd "$HOME/my-drosera-trap" || { echo "❌ Директория не найдена"; exit 1; }
+        cd "$HOME/my-drosera-trap" || { echo "❌ Drosera directory not found"; exit 1; }
 
         sed -i '/^private/d' drosera.toml
         sed -i '/^whitelist/d' drosera.toml
@@ -394,7 +398,7 @@ EOF
                 echo "🔄 Backup already exists at ${ENV_FILE}.bak"
             fi
         else 
-            echo "❌ Файл конфигурации $ENV_FILE не найден. Сначала запусти 'Setup & Deploy Trap'."
+            echo "❌ $ENV_FILE not found. Run 'Setup & Deploy Trap'."
             exit 1
         fi
         source "$ENV_FILE"
