@@ -113,9 +113,9 @@ select opt in "${options[@]}"; do
           else
             DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
           fi
+          "$HOME/.drosera/bin/drosera" dryrun
         fi
-
-        "$HOME/.drosera/bin/drosera" dryrun
+        echo "📂 Trap created in $HOME/my-drosera-trap"
         cd "$HOME"
         break
         ;;
