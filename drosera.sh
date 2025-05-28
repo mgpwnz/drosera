@@ -85,12 +85,11 @@ select opt in "${options[@]}"; do
     "Create trap")
         ENV_FILE="$HOME/.env.drosera"
         if [[ ! -f "$ENV_FILE" ]]; then
-            echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
-            exit 1
+          echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
+          exit 1
         fi
         source "$ENV_FILE"
-    
-        # === Create Trap ===
+
         mkdir -p "$HOME/my-drosera-trap"
         cd "$HOME/my-drosera-trap"
 
@@ -102,13 +101,14 @@ select opt in "${options[@]}"; do
         "$HOME/.foundry/bin/forge" build
 
         echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
-        read
+        read -p "Press Enter to continue..."
 
         if [[ -n "$Hol_RPC" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
         else
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
         fi
+
         "$HOME/.drosera/bin/drosera" dryrun
         cd "$HOME"
         break
