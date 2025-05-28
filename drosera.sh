@@ -147,9 +147,9 @@ EOF
         fi
         # === Apply ===
         if [[ -n "$Hol_RPC" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
         else
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply
         fi
         break
         ;;
