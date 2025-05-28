@@ -104,9 +104,9 @@ select opt in "${options[@]}"; do
         read -p "Press Enter to continue..."
 
         if [[ -n "$Hol_RPC" ]]; then
-          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
         else
-          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply
         fi
 
         "$HOME/.drosera/bin/drosera" dryrun
