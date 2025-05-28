@@ -17,73 +17,66 @@ select opt in "${options[@]}"; do
         ;;
 
     "Setup CLI & add env")
-        # === Install CLI ===
         curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
         curl -L https://foundry.paradigm.xyz | bash || { echo "❌ Foundry install failed"; exit 1; }
         curl -fsSL https://bun.sh/install | bash || { echo "❌ Bun install failed"; exit 1; }
 
-        # === Add CLI to PATH (bashrc) ===
         for dir in "$HOME/.drosera/bin" "$HOME/.foundry/bin" "$HOME/.bun/bin"; do
-            grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
+          grep -qxF "export PATH=\"\$PATH:$dir\"" "$HOME/.bashrc" || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
         done
         source "$HOME/.bashrc"
 
-        # === Run update CLI ===
         "$HOME/.drosera/bin/droseraup"
         "$HOME/.foundry/bin/foundryup"
 
-        # === Create env ===
         ENV_FILE="$HOME/.env.drosera"
+        touch "$ENV_FILE"
         [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
 
         if [[ -z "$github_Email" ]]; then
-            read -p "Enter GitHub email: " github_Email
-            echo "github_Email=\"$github_Email\"" >> "$ENV_FILE"
+          read -p "Enter GitHub email: " github_Email
+          echo "github_Email=\"$github_Email\"" >> "$ENV_FILE"
         fi
 
         if [[ -z "$github_Username" ]]; then
-            read -p "Enter GitHub username: " github_Username
-            echo "github_Username=\"$github_Username\"" >> "$ENV_FILE"
+          read -p "Enter GitHub username: " github_Username
+          echo "github_Username=\"$github_Username\"" >> "$ENV_FILE"
         fi
 
         if [[ -z "$private_key" ]]; then
-            read -p "Enter your private key: " private_key
-            echo "private_key=\"$private_key\"" >> "$ENV_FILE"
+          read -p "Enter your private key: " private_key
+          echo "private_key=\"$private_key\"" >> "$ENV_FILE"
         fi
 
         if [[ -z "$public_key" ]]; then
-            read -p "Enter your public key: " public_key
-            echo "public_key=\"$public_key\"" >> "$ENV_FILE"
+          read -p "Enter your public key: " public_key
+          echo "public_key=\"$public_key\"" >> "$ENV_FILE"
         fi
+
         if [[ -z "$Hol_RPC" ]]; then
-            read -p "🌐 Holesky RPC URL (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC
-            Hol_RPC="${Hol_RPC:-https://ethereum-holesky-rpc.publicnode.com}"
-            echo "Hol_RPC=\"$Hol_RPC\"" >> "$ENV_FILE"
+          read -p "🌐 Holesky RPC URL (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC
+          Hol_RPC="${Hol_RPC:-https://ethereum-holesky-rpc.publicnode.com}"
+          echo "Hol_RPC=\"$Hol_RPC\"" >> "$ENV_FILE"
         fi
+
         read -r -p "Add secondary operator? [y/N] " response
-        case "$response" in
-            [yY][eE][sS]|[yY])
-                if [[ -z "$private_key2" ]]; then
-                    read -p "Enter your private key2: " private_key2
-                    echo "private_key2=\"$private_key2\"" >> "$ENV_FILE"
-                fi
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+          if [[ -z "$private_key2" ]]; then
+            read -p "Enter your private key2: " private_key2
+            echo "private_key2=\"$private_key2\"" >> "$ENV_FILE"
+          fi
 
-                if [[ -z "$public_key2" ]]; then
-                    read -p "Enter your public key2: " public_key2
-                    echo "public_key2=\"$public_key2\"" >> "$ENV_FILE"
-                fi
-                if [[ -z "$Hol_RPC2" ]]; then
-                    read -p "🌐 Holesky RPC URL2 (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC2
-                    Hol_RPC2="${Hol_RPC2:-https://ethereum-holesky-rpc.publicnode.com}"
-                    echo "Hol_RPC2=\"$Hol_RPC2\"" >> "$ENV_FILE"
-                fi
-                ;;
+          if [[ -z "$public_key2" ]]; then
+            read -p "Enter your public key2: " public_key2
+            echo "public_key2=\"$public_key2\"" >> "$ENV_FILE"
+          fi
 
-            * )
-                echo "❌ Cancelled"
-                ;;
-
-        esac
+          if [[ -z "$Hol_RPC2" ]]; then
+            read -p "🌐 Holesky RPC URL2 (default: https://ethereum-holesky-rpc.publicnode.com): " Hol_RPC2
+            Hol_RPC2="${Hol_RPC2:-https://ethereum-holesky-rpc.publicnode.com}"
+            echo "Hol_RPC2=\"$Hol_RPC2\"" >> "$ENV_FILE"
+          fi
+        fi
 
         echo "🔁 Using conf $ENV_FILE"
         break
