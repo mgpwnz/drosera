@@ -82,7 +82,7 @@ select opt in "${options[@]}"; do
         break
         ;;
 
-    "Create trap")
+      "Create trap")
         ENV_FILE="$HOME/.env.drosera"
         if [[ ! -f "$ENV_FILE" ]]; then
           echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
@@ -96,17 +96,23 @@ select opt in "${options[@]}"; do
         git config --global user.email "$github_Email"
         git config --global user.name "$github_Username"
 
-        "$HOME/.foundry/bin/forge" init -t drosera-network/trap-foundry-template
-        "$HOME/.bun/bin/bun" install
-        "$HOME/.foundry/bin/forge" build
-
-        echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
-        read -p "Press Enter to continue..."
-
-        if [[ -n "$Hol_RPC" ]]; then
-          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
+        read -p "⚠️ Do you already have a trap address? [y/N]: " has_trap
+        if [[ "$has_trap" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+          read -p "Enter existing trap address: " existing_trap
+          echo "address = \"$existing_trap\"" >> drosera.toml
         else
-          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply
+          "$HOME/.foundry/bin/forge" init -t drosera-network/trap-foundry-template
+          "$HOME/.bun/bin/bun" install
+          "$HOME/.foundry/bin/forge" build
+
+          echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+)"
+          read -p "Press Enter to continue..."
+
+          if [[ -n "$Hol_RPC" ]]; then
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
+          else
+            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+          fi
         fi
 
         "$HOME/.drosera/bin/drosera" dryrun
