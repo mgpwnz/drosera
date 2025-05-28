@@ -83,6 +83,13 @@ select opt in "${options[@]}"; do
         ;;
 
     "Create trap")
+        ENV_FILE="$HOME/.env.drosera"
+        if [[ ! -f "$ENV_FILE" ]]; then
+            echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
+            exit 1
+        fi
+        source "$ENV_FILE"
+    
         # === Create Trap ===
         mkdir -p "$HOME/my-drosera-trap"
         cd "$HOME/my-drosera-trap"
