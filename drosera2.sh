@@ -828,14 +828,15 @@ EOF
         sed -i \
           's|^[[:space:]]*response_function = "helloworld(string)"|# &\nresponse_function = "respondWithDiscordName(string)"|' \
           drosera.toml
-
+        echo " Drosera update "
+        "$HOME/.drosera/bin/droseraup"
+        
         echo "🔨 Building trap contract..."
         "$HOME/.foundry/bin/forge" build
 
         echo "🔄 Running drosera dryrun..."
         "$HOME/.drosera/bin/drosera" dryrun
-        echo " Drosera update "
-        "$HOME/.drosera/bin/droseraup"
+
         
         echo "🔄 Applying trap changes..."
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
