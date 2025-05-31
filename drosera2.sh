@@ -345,7 +345,7 @@ EOF
         VERSION=$(curl -s https://api.github.com/repos/drosera-network/releases/releases/latest | jq -r '.tag_name') \
 
         ASSET="drosera-operator-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-        URL="https://github.com/drosera-network/releases/download/${VERSION}/${ASSET}"
+        URL="https://github.com/drosera-network/releases/releases/download/${VERSION}/${ASSET}"
         echo "🔽 Downloading operator version $VERSION..."
         curl -fL "$URL" -o "$ASSET" || { echo "❌ Не удалось скачать $ASSET"; exit 1; }
         tar -xvf "$ASSET"   || { echo "❌ Не удалось распаковать $ASSET"; exit 1; }
@@ -830,7 +830,7 @@ EOF
           drosera.toml
         echo " Drosera update "
         "$HOME/.drosera/bin/droseraup"
-        
+
         echo "🔨 Building trap contract..."
         "$HOME/.foundry/bin/forge" build
 
