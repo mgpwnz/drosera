@@ -862,16 +862,13 @@ EOF
         echo "🔄 Запускаем Apply Host mode..."
 
         if [[ ! -d "$PROJECT_DIR" ]]; then
-          echo "ℹ️ $PROJECT_DIR не найден. Создаём папку и формируем docker-compose.yml..."
-          mkdir -p "$PROJECT_DIR"
-        fi
-        cd "$PROJECT_DIR" || exit 1
-
-        # Останавливаем старый контейнер (если был)
-        docker compose down -v || true
-
-        SERVER_IP=$(hostname -I | awk '{print $1}')
-        cat > docker-compose.yml <<EOF
+                echo "❌ $PROJECT_DIR not found. Run 'RUN Drosera' first."
+                break
+              fi
+              cd "$PROJECT_DIR"
+              docker compose down -v || true
+              SERVER_IP=$(hostname -I | awk '{print $1}')
+              cat > docker-compose.yml <<EOF
 version: '3'
 services:
   drosera:
@@ -885,7 +882,7 @@ services:
                    --server-port 31314 \
                    --eth-rpc-url ${Hol_RPC} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
+                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
                    --eth-private-key ${private_key} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
@@ -903,7 +900,7 @@ services:
                    --server-port 31316 \
                    --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
+                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
                    --eth-private-key ${private_key2:-${private_key}} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
@@ -914,11 +911,9 @@ volumes:
   drosera_data:
   drosera_data2:
 EOF
-
-        echo "🔄 Запускаем контейнеры в host-режиме..."
-        docker compose up -d
-        echo "✅ Apply Host mode завершён."
-        cd "$HOME"
+              echo "🔄 Restarting with new host mode..."
+              docker compose up -d
+              cd "$HOME"
         break
         ;;
 
