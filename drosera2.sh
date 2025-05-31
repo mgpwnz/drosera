@@ -815,22 +815,20 @@ EOF
           exit 1
         fi
 
+        # 1) Заменяем строку path = "out/HelloWorldTrap.sol/HelloWorldTrap.json"
+        #    на: закомментированную старую + новую строку path = "out/Trap.sol/Trap.json"
         sed -i \
-          -e '/^[[:space:]]*path = "out\/HelloWorldTrap.sol\/HelloWorldTrap.json"/{\
-s/^[[:space:]]*/&#/;\
-a\
-path = "out\/Trap.sol\/Trap.json"\
-}' \
-          -e '/^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"/{\
-s/^[[:space:]]*/&#/;\
-a\
-response_contract = "0x4608Afa7f277C8E0BE232232265850d1cDeB600E"\
-}' \
-          -e '/^[[:space:]]*response_function = "helloworld(string)"/{\
-s/^[[:space:]]*/&#/;\
-a\
-response_function = "respondWithDiscordName(string)"\
-}' \
+          's|^[[:space:]]*path = "out/HelloWorldTrap.sol/HelloWorldTrap.json"|# &\npath = "out/Trap.sol/Trap.json"|' \
+          drosera.toml
+
+        # 2) Аналогично для response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"
+        sed -i \
+          's|^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"|# &\nresponse_contract = "0x4608Afa7f277C8E0BE232232265850d1cDeB600E"|' \
+          drosera.toml
+
+        # 3) Аналогично для response_function = "helloworld(string)"
+        sed -i \
+          's|^[[:space:]]*response_function = "helloworld(string)"|# &\nresponse_function = "respondWithDiscordName(string)"|' \
           drosera.toml
 
         echo "🔨 Building trap contract..."
@@ -856,7 +854,7 @@ response_function = "respondWithDiscordName(string)"\
           echo "🔄 isResponder == true, автоматически запускаем Apply Host mode..."
 
           if [[ ! -d "$PROJECT_DIR" ]]; then
-            echo "ℹ️ $PROJECT_DIR not найден. Создаём папку и формируем docker-compose.yml..."
+            echo "ℹ️ $PROJECT_DIR не найден. Создаём папку и формируем docker-compose.yml..."
             mkdir -p "$PROJECT_DIR"
           fi
           cd "$PROJECT_DIR"
@@ -920,7 +918,6 @@ EOF
         cd "$HOME"
         break
         ;;
-
 
       ############################
       "Uninstall")
