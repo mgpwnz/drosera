@@ -809,25 +809,26 @@ contract Trap is ITrap {
 }
 EOF
 
-        # Обновляем drosera.toml: закомментируем старые и вставим новые
+        # === Change toml ===
+        # Переписываем sed, используя разделитель '|' вместо '/' для шаблонов, чтобы не путаться с путями
         if [[ ! -f "drosera.toml" ]]; then
           echo "❌ drosera.toml not found in $TRAP_DIR"
           exit 1
         fi
 
         sed -i \
-          -e '/^[[:space:]]*path = "out\/HelloWorldTrap.sol\/HelloWorldTrap.json"/{\
-s/^[[:space:]]*/&#/;\
+          -e '\|^[[:space:]]*path = "out/HelloWorldTrap.sol/HelloWorldTrap.json"|{\
+s|^[[:space:]]*|&#|;\
 a\
-path = "out/Trap.sol\/Trap.json"\
+path = "out/Trap.sol/Trap.json"\
 }' \
-          -e '/^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"/{\
-s/^[[:space:]]*/&#/;\
+          -e '\|^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"|{\
+s|^[[:space:]]*|&#|;\
 a\
 response_contract = "${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E}"\
 }' \
-          -e '/^[[:space:]]*response_function = "helloworld(string)"/{\
-s/^[[:space:]]*/&#/;\
+          -e '\|^[[:space:]]*response_function = "helloworld(string)"|{\
+s|^[[:space:]]*|&#|;\
 a\
 response_function = "respondWithDiscordName(string)"\
 }' \
@@ -843,26 +844,25 @@ response_function = "respondWithDiscordName(string)"\
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
 
         echo "🔍 Verifying isResponder status..."
-        # Сохраняем результат в переменную RESPONSE
         RESPONSE=$( "$HOME/.foundry/bin/forge" cast call \
           ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
           "isResponder(address)(bool)" "$public_key" \
           --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
 
         echo "📝 isResponder returned: $RESPONSE"
-        echo "✅ Cadet ROLE complete (если выше true — OK)"
+        echo "✅ Cadet ROLE complete (если above true — OK)"
 
         # Если true, запускаем Apply Host mode
         if [[ "$RESPONSE" == "true" ]]; then
-          echo "🔄 isResponder == true, запускаем Apply Host mode автоматически..."
+          echo "🔄 isResponder == true, автоматически запускаем Apply Host mode..."
 
           if [[ ! -d "$PROJECT_DIR" ]]; then
-            echo "ℹ️ $PROJECT_DIR not найден. Создаём папку и собираем новый docker-compose.yml..."
+            echo "ℹ️ $PROJECT_DIR not найден. Создаём папку и формируем docker-compose.yml..."
             mkdir -p "$PROJECT_DIR"
           fi
           cd "$PROJECT_DIR"
 
-          # Останавливаем старый контейнер (если есть)
+          # Останавливаем старый контейнер (если был)
           docker compose down -v || true
 
           SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -910,7 +910,7 @@ volumes:
   drosera_data2:
 EOF
 
-          echo "🔄 Запускаем контейнеры в режиме host..."
+          echo "🔄 Запускаем контейнеры в host-режиме..."
           docker compose up -d
           echo "✅ Apply Host mode завершён."
           cd "$HOME"
