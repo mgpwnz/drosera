@@ -342,8 +342,7 @@ EOF
         fi
 
         # Получаем новую версию оператора
-        VERSION=$(curl -fsSL "https://api.github.com/repos/drosera-network/releases/releases/latest" | jq -r '.tag_name') \
-          || { echo "❌ Не удалось получить версию из GitHub API"; exit 1; }
+        VERSION=$(curl -s https://api.github.com/repos/drosera-network/releases/releases/latest | jq -r '.tag_name') \
 
         ASSET="drosera-operator-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
         URL="https://github.com/drosera-network/releases/download/${VERSION}/${ASSET}"
