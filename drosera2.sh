@@ -750,7 +750,7 @@ EOF
         ;;
 
       ############################
-      "Cadet ROLE")
+           "Cadet ROLE")
         echo "--- Cadet ROLE ---"
         if [[ ! -f "$ENV_FILE" ]]; then
           echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
@@ -815,18 +815,17 @@ EOF
           exit 1
         fi
 
-        # 1) Заменяем строку path = "out/HelloWorldTrap.sol/HelloWorldTrap.json"
-        #    на: закомментированную старую + новую строку path = "out/Trap.sol/Trap.json"
+        # 1) Закомментировать старую строку и вставить новую path
         sed -i \
           's|^[[:space:]]*path = "out/HelloWorldTrap.sol/HelloWorldTrap.json"|# &\npath = "out/Trap.sol/Trap.json"|' \
           drosera.toml
 
-        # 2) Аналогично для response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"
+        # 2) Закомментировать старую response_contract и вставить новую
         sed -i \
           's|^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"|# &\nresponse_contract = "0x4608Afa7f277C8E0BE232232265850d1cDeB600E"|' \
           drosera.toml
 
-        # 3) Аналогично для response_function = "helloworld(string)"
+        # 3) Закомментировать старую response_function и вставить новую
         sed -i \
           's|^[[:space:]]*response_function = "helloworld(string)"|# &\nresponse_function = "respondWithDiscordName(string)"|' \
           drosera.toml
@@ -840,30 +839,39 @@ EOF
         echo "🔄 Applying trap changes..."
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
 
-        echo "🔍 Verifying isResponder status..."
-        RESPONSE=$( "$HOME/.foundry/bin/forge" cast call \
-          ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
-          "isResponder(address)(bool)" "$public_key" \
-          --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
+        echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
 
-        echo "📝 isResponder returned: $RESPONSE"
-        echo "✅ Cadet ROLE complete (если выше true — OK)"
+        # Цикл: проверяем метод isResponder, пока не станет true
+        while true; do
+          RESPONSE=$( "$HOME/.foundry/bin/cast" call \
+            ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
+            "isResponder(address)(bool)" "$public_key" \
+            --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
 
-        # Если true, запускаем Apply Host mode
-        if [[ "$RESPONSE" == "true" ]]; then
-          echo "🔄 isResponder == true, автоматически запускаем Apply Host mode..."
-
-          if [[ ! -d "$PROJECT_DIR" ]]; then
-            echo "ℹ️ $PROJECT_DIR не найден. Создаём папку и формируем docker-compose.yml..."
-            mkdir -p "$PROJECT_DIR"
+          echo "📝 isResponder returned: $RESPONSE"
+          if [[ "$RESPONSE" == "true" ]]; then
+            echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
+            break
           fi
-          cd "$PROJECT_DIR"
 
-          # Останавливаем старый контейнер (если был)
-          docker compose down -v || true
+          echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
+          sleep 60
+        done
 
-          SERVER_IP=$(hostname -I | awk '{print $1}')
-          cat > docker-compose.yml <<EOF
+        # === Apply Host mode после того, как isResponder стал true ===
+        echo "🔄 Запускаем Apply Host mode..."
+
+        if [[ ! -d "$PROJECT_DIR" ]]; then
+          echo "ℹ️ $PROJECT_DIR не найден. Создаём папку и формируем docker-compose.yml..."
+          mkdir -p "$PROJECT_DIR"
+        fi
+        cd "$PROJECT_DIR" || exit 1
+
+        # Останавливаем старый контейнер (если был)
+        docker compose down -v || true
+
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+        cat > docker-compose.yml <<EOF
 version: '3'
 services:
   drosera:
@@ -907,14 +915,9 @@ volumes:
   drosera_data2:
 EOF
 
-          echo "🔄 Запускаем контейнеры в host-режиме..."
-          docker compose up -d
-          echo "✅ Apply Host mode завершён."
-          cd "$HOME"
-        else
-          echo "ℹ️ isResponder != true, пропускаем Apply Host mode."
-        fi
-
+        echo "🔄 Запускаем контейнеры в host-режиме..."
+        docker compose up -d
+        echo "✅ Apply Host mode завершён."
         cd "$HOME"
         break
         ;;
