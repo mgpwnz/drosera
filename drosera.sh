@@ -3,7 +3,7 @@
 while true; do
 # === MAIN ===
 PS3='Select an action: '
-options=("Install Dependencies" "Setup CLI & add env" "Create trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Change rpc" "Cadet ROLE" "Update CLI operator" "Uninstall" "Exit")
+options=("Install Dependencies" "Setup CLI & add env" "Create trap" "Installing and configuring the Operator" "CLI operator installation" "RUN Drosera" "Logs" "Check" "Change rpc" "Update CLI operator" "Uninstall" "Exit")
 select opt in "${options[@]}"; do
     case $opt in
 
@@ -393,79 +393,7 @@ EOF
         echo "$RESPONSE" | jq
         break
         ;;
-    "Cadet ROLE")
-        ENV_FILE="$HOME/.env.drosera"
-        source "$ENV_FILE"
-        if [[ ! -f "$ENV_FILE" ]]; then
-            echo "❌ $ENV_FILE not found. Run 'Setup & Deploy Trap'."
-            exit 1
-        fi
-        
-        cd "$HOME/Drosera"
-        read -p "Enter your discord name: " DISCORD_USERNAME
-        cat > src/Trap.sol <<EOF
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
 
-import {ITrap} from "drosera-contracts/interfaces/ITrap.sol";
-
-interface IMockResponse {
-    function isActive() external view returns (bool);
-}
-
-contract Trap is ITrap {
-    address public constant RESPONSE_CONTRACT = 0x4608Afa7f277C8E0BE232232265850d1cDeB600E;
-    string constant discordName = "$DISCORD_USERNAME"; // add your discord name here
-
-    function collect() external view returns (bytes memory) {
-        bool active = IMockResponse(RESPONSE_CONTRACT).isActive();
-        return abi.encode(active, discordName);
-    }
-
-    function shouldRespond(bytes[] calldata data) external pure returns (bool, bytes memory) {
-        // take the latest block data from collect
-        (bool active, string memory name) = abi.decode(data[0], (bool, string));
-        // will not run if the contract is not active or the discord name is not set
-        if (!active || bytes(name).length == 0) {
-            return (false, bytes(""));
-        }
-
-        return (true, abi.encode(name));
-    }
-}
-EOF
-        # === Change toml ===
-        sed -i \
-  -e '/^[[:space:]]*path = "out\/HelloWorldTrap.sol\/HelloWorldTrap.json"/{\
-s/^[[:space:]]*/&#/;\
-a\
-path = "out/Trap.sol/Trap.json"\
-}' \
-  -e '/^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"/{\
-s/^[[:space:]]*/&#/;\
-a\
-response_contract = "0x4608Afa7f277C8E0BE232232265850d1cDeB600E"\
-}' \
-  -e '/^[[:space:]]*response_function = "helloworld(string)"/{\
-s/^[[:space:]]*/&#/;\
-a\
-response_function = "respondWithDiscordName(string)"\
-}' \
-  my-drosera-trap/drosera.toml
-
-        # === Apply ===
-        "$HOME/.foundry/bin/forge" build
-        "$HOME/.drosera/bin/drosera" dryrun
-        if [[ -n "$Hol_RPC" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
-        else
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply
-        fi
-        "$HOME/.foundry/bin/forge" cast call 0x4608Afa7f277C8E0BE232232265850d1cDeB600E "isResponder(address)(bool)" "$public_key" --rpc-url https://ethereum-holesky-rpc.publicnode.com
-        echo "If True successfully!"
-
-        break
-        ;;
     "Change rpc")
         ENV_FILE="$HOME/.env.drosera"
         if [[ -f "$ENV_FILE" ]]; then

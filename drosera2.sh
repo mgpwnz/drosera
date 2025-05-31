@@ -816,18 +816,18 @@ EOF
         fi
 
         sed -i \
-          -e '\|^[[:space:]]*path = "out/HelloWorldTrap.sol/HelloWorldTrap.json"|{\
-s|^[[:space:]]*|&#|;\
+          -e '/^[[:space:]]*path = "out\/HelloWorldTrap.sol\/HelloWorldTrap.json"/{\
+s/^[[:space:]]*/&#/;\
 a\
-path = "out/Trap.sol/Trap.json"\
+path = "out\/Trap.sol\/Trap.json"\
 }' \
-          -e '\|^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"|{\
-s|^[[:space:]]*|&#|;\
+          -e '/^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"/{\
+s/^[[:space:]]*/&#/;\
 a\
 response_contract = "0x4608Afa7f277C8E0BE232232265850d1cDeB600E"\
 }' \
-          -e '\|^[[:space:]]*response_function = "helloworld(string)"|{\
-s|^[[:space:]]*|&#|;\
+          -e '/^[[:space:]]*response_function = "helloworld(string)"/{\
+s/^[[:space:]]*/&#/;\
 a\
 response_function = "respondWithDiscordName(string)"\
 }' \
@@ -879,7 +879,7 @@ services:
                    --server-port 31314 \
                    --eth-rpc-url ${Hol_RPC} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7f277C8E0BE232232265850d1cDeB600E} \
+                   --drosera-address ${TRAP_ADDRESS:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
                    --eth-private-key ${private_key} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
@@ -897,7 +897,7 @@ services:
                    --server-port 31316 \
                    --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7f277C8E0BE232232265850d1cDeB600E} \
+                   --drosera-address ${TRAP_ADDRESS:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
                    --eth-private-key ${private_key2:-${private_key}} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
