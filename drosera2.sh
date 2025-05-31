@@ -810,7 +810,6 @@ contract Trap is ITrap {
 EOF
 
         # === Change toml ===
-        # Переписываем sed, используя разделитель '|' вместо '/' для шаблонов, чтобы не путаться с путями
         if [[ ! -f "drosera.toml" ]]; then
           echo "❌ drosera.toml not found in $TRAP_DIR"
           exit 1
@@ -825,7 +824,7 @@ path = "out/Trap.sol/Trap.json"\
           -e '\|^[[:space:]]*response_contract = "0xdA890040Af0533D98B9F5f8FE3537720ABf83B0C"|{\
 s|^[[:space:]]*|&#|;\
 a\
-response_contract = "${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E}"\
+response_contract = "0x4608Afa7f277C8E0BE232232265850d1cDeB600E"\
 }' \
           -e '\|^[[:space:]]*response_function = "helloworld(string)"|{\
 s|^[[:space:]]*|&#|;\
@@ -850,7 +849,7 @@ response_function = "respondWithDiscordName(string)"\
           --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
 
         echo "📝 isResponder returned: $RESPONSE"
-        echo "✅ Cadet ROLE complete (если above true — OK)"
+        echo "✅ Cadet ROLE complete (если выше true — OK)"
 
         # Если true, запускаем Apply Host mode
         if [[ "$RESPONSE" == "true" ]]; then
@@ -880,7 +879,7 @@ services:
                    --server-port 31314 \
                    --eth-rpc-url ${Hol_RPC} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --drosera-address ${TRAP_ADDRESS:-0xea08f7f277C8E0BE232232265850d1cDeB600E} \
                    --eth-private-key ${private_key} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
@@ -898,7 +897,7 @@ services:
                    --server-port 31316 \
                    --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --drosera-address ${TRAP_ADDRESS:-0xea08f7f277C8E0BE232232265850d1cDeB600E} \
                    --eth-private-key ${private_key2:-${private_key}} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
@@ -921,6 +920,7 @@ EOF
         cd "$HOME"
         break
         ;;
+
 
       ############################
       "Uninstall")
