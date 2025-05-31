@@ -272,9 +272,9 @@ EOF
 
         echo "🔄 Applying drosera apply..."
         if [[ -n "${Hol_RPC:-}" ]]; then
-          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
+          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
         else
-          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply
+          DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
         fi
         echo "✅ Operator configured."
         break
@@ -837,7 +837,7 @@ EOF
         "$HOME/.drosera/bin/drosera" dryrun
 
         echo "🔄 Applying trap changes..."
-        DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/droseraup" apply --eth-rpc-url "$Hol_RPC"
+        DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
 
         echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
 
