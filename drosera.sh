@@ -18,6 +18,83 @@ function is_valid_eth_address() {
   [[ $1 =~ ^0x[0-9a-fA-F]{40}$ ]]
 }
 
+# Функция для генерации docker-compose.yml с одним контейнером
+function one_container() {
+  mkdir -p "$PROJECT_DIR"
+  cat > "$PROJECT_DIR/docker-compose.yml" <<EOF
+version: '3'
+services:
+  drosera:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node
+    network_mode: host
+    volumes:
+      - drosera_data:/data
+    command: node --db-file-path /data/drosera.db \
+                   --network-p2p-port 31313 \
+                   --server-port 31314 \
+                   --eth-rpc-url ${Hol_RPC} \
+                   --eth-backup-rpc-url https://holesky.drpc.org \
+                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --eth-private-key ${private_key} \
+                   --listen-address 0.0.0.0 \
+                   --network-external-p2p-address ${SERVER_IP} \
+                   --disable-dnr-confirmation true
+    restart: always
+
+volumes:
+  drosera_data:
+EOF
+}
+
+# Функция для генерации docker-compose.yml с двумя контейнерами
+function two_containers() {
+  mkdir -p "$PROJECT_DIR"
+  cat > "$PROJECT_DIR/docker-compose.yml" <<EOF
+version: '3'
+services:
+  drosera:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node
+    network_mode: host
+    volumes:
+      - drosera_data:/data
+    command: node --db-file-path /data/drosera.db \
+                   --network-p2p-port 31313 \
+                   --server-port 31314 \
+                   --eth-rpc-url ${Hol_RPC} \
+                   --eth-backup-rpc-url https://holesky.drpc.org \
+                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --eth-private-key ${private_key} \
+                   --listen-address 0.0.0.0 \
+                   --network-external-p2p-address ${SERVER_IP} \
+                   --disable-dnr-confirmation true
+    restart: always
+
+  drosera2:
+    image: ghcr.io/drosera-network/drosera-operator:latest
+    container_name: drosera-node2
+    network_mode: host
+    volumes:
+      - drosera_data2:/data
+    command: node --db-file-path /data/drosera.db \
+                   --network-p2p-port 31315 \
+                   --server-port 31316 \
+                   --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
+                   --eth-backup-rpc-url https://holesky.drpc.org \
+                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --eth-private-key ${private_key2} \
+                   --listen-address 0.0.0.0 \
+                   --network-external-p2p-address ${SERVER_IP} \
+                   --disable-dnr-confirmation true
+    restart: always
+
+volumes:
+  drosera_data:
+  drosera_data2:
+EOF
+}
+
 PS3='Select an action: '
 options=(
   "Install Dependencies"
@@ -293,8 +370,7 @@ EOF
         : "${Hol_RPC:? Hol_RPC is not set in $ENV_FILE}"
 
         echo "🔄 Fetching latest release from GitHub..."
-        VERSION=$(curl -fsSL "https://api.github.com/repos/drosera-network/releases/latest" | jq -r '.tag_name') \
-          || { echo "❌ Не удалось получить версию из GitHub API"; exit 1; }
+        VERSION=$(curl -s https://api.github.com/repos/drosera-network/releases/releases/latest | jq -r '.tag_name')
 
         ASSET="drosera-operator-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
         URL="https://github.com/drosera-network/releases/download/${VERSION}/${ASSET}"
@@ -342,10 +418,10 @@ EOF
         fi
 
         # Получаем новую версию оператора
-        VERSION=$(curl -s https://api.github.com/repos/drosera-network/releases/releases/latest | jq -r '.tag_name') \
+        VERSION=$(curl -s https://api.github.com/repos/drosera-network/releases/releases/latest | jq -r '.tag_name')
 
         ASSET="drosera-operator-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-        URL="https://github.com/drosera-network/releases/releases/download/${VERSION}/${ASSET}"
+        URL="https://github.com/drosera-network/releases/download/${VERSION}/${ASSET}"
         echo "🔽 Downloading operator version $VERSION..."
         curl -fL "$URL" -o "$ASSET" || { echo "❌ Не удалось скачать $ASSET"; exit 1; }
         tar -xvf "$ASSET"   || { echo "❌ Не удалось распаковать $ASSET"; exit 1; }
@@ -390,82 +466,14 @@ EOF
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
 
         # Обновляем docker-compose.yml для операторов
-        mkdir -p "$PROJECT_DIR"
-        cd "$PROJECT_DIR"
-
         if [[ -z "${private_key2:-}" ]]; then
-          cat > docker-compose.yml <<EOF
-version: '3'
-services:
-  drosera:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node
-    network_mode: host
-    volumes:
-      - drosera_data:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31313 \
-                   --server-port 31314 \
-                   --eth-rpc-url ${Hol_RPC} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
-
-volumes:
-  drosera_data:
-EOF
+          one_container
         else
-          cat > docker-compose.yml <<EOF
-version: '3'
-services:
-  drosera:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node
-    network_mode: host
-    volumes:
-      - drosera_data:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31313 \
-                   --server-port 31314 \
-                   --eth-rpc-url ${Hol_RPC} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
-
-  drosera2:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node2
-    network_mode: host
-    volumes:
-      - drosera_data2:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31315 \
-                   --server-port 31316 \
-                   --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key2} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
-
-volumes:
-  drosera_data:
-  drosera_data2:
-EOF
+          two_containers
         fi
 
         echo "🔄 Starting operator containers..."
-        docker compose up -d
+        docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
         echo "✅ Operator containers started."
         cd "$HOME"
         break
@@ -489,86 +497,22 @@ EOF
           exit 1
         fi
 
-        mkdir -p "$PROJECT_DIR"
-        cd "$PROJECT_DIR"
-
         # Предварительно остановим старые контейнеры, если есть
-        docker compose down -v || true
+        if [[ -d "$PROJECT_DIR" ]]; then
+          cd "$PROJECT_DIR"
+          docker compose down -v || true
+          cd "$HOME"
+        fi
 
-        # Создаем новый docker-compose.yml
+        # Создаем/обновляем docker-compose.yml
         if [[ -z "${private_key2:-}" ]]; then
-          cat > docker-compose.yml <<EOF
-version: '3'
-services:
-  drosera:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node
-    network_mode: host
-    volumes:
-      - drosera_data:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31313 \
-                   --server-port 31314 \
-                   --eth-rpc-url ${Hol_RPC} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
-
-volumes:
-  drosera_data:
-EOF
+          one_container
         else
-          cat > docker-compose.yml <<EOF
-version: '3'
-services:
-  drosera:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node
-    network_mode: host
-    volumes:
-      - drosera_data:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31313 \
-                   --server-port 31314 \
-                   --eth-rpc-url ${Hol_RPC} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
-
-  drosera2:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node2
-    network_mode: host
-    volumes:
-      - drosera_data2:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31315 \
-                   --server-port 31316 \
-                   --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key2} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
-
-volumes:
-  drosera_data:
-  drosera_data2:
-EOF
+          two_containers
         fi
 
         echo "🔄 Starting Drosera operator..."
-        docker compose up -d
+        docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
         echo "✅ Drosera is up."
         cd "$HOME"
         break
@@ -689,54 +633,23 @@ EOF
                 echo "❌ $PROJECT_DIR not found. Run 'RUN Drosera' first."
                 break
               fi
+              SERVER_IP=$(hostname -I | awk '{print $1}')
+              if [[ -z "$SERVER_IP" ]]; then
+                echo "❌ Не удалось получить IP"
+                break
+              fi
               cd "$PROJECT_DIR"
               docker compose down -v || true
-              SERVER_IP=$(hostname -I | awk '{print $1}')
-              cat > docker-compose.yml <<EOF
-version: '3'
-services:
-  drosera:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node
-    network_mode: host
-    volumes:
-      - drosera_data:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31313 \
-                   --server-port 31314 \
-                   --eth-rpc-url ${Hol_RPC} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
 
-  drosera2:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node2
-    network_mode: host
-    volumes:
-      - drosera_data2:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31315 \
-                   --server-port 31316 \
-                   --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key2:-${private_key}} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
+              # Создаем/обновляем docker-compose.yml
+              if [[ -z "${private_key2:-}" ]]; then
+                one_container
+              else
+                two_containers
+              fi
 
-volumes:
-  drosera_data:
-  drosera_data2:
-EOF
               echo "🔄 Restarting with new host mode..."
-              docker compose up -d
+              docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
               cd "$HOME"
               break
               ;;
@@ -749,7 +662,7 @@ EOF
         ;;
 
       ############################
-           "Cadet ROLE")
+      "Cadet ROLE")
         echo "--- Cadet ROLE ---"
         if [[ ! -f "$ENV_FILE" ]]; then
           echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
@@ -837,7 +750,6 @@ EOF
         echo "🔄 Running drosera dryrun..."
         "$HOME/.drosera/bin/drosera" dryrun
 
-        
         echo "🔄 Applying trap changes..."
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
 
@@ -863,59 +775,29 @@ EOF
         # === Apply Host mode после того, как isResponder стал true ===
         echo "🔄 Запускаем Apply Host mode..."
 
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+        if [[ -z "$SERVER_IP" ]]; then
+          echo "❌ Не удалось получить IP"
+          break
+        fi
         if [[ ! -d "$PROJECT_DIR" ]]; then
-                echo "❌ $PROJECT_DIR not found. Run 'RUN Drosera' first."
-                break
-              fi
-              cd "$PROJECT_DIR"
-              docker compose down -v || true
-              SERVER_IP=$(hostname -I | awk '{print $1}')
-              cat > docker-compose.yml <<EOF
-version: '3'
-services:
-  drosera:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node
-    network_mode: host
-    volumes:
-      - drosera_data:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31313 \
-                   --server-port 31314 \
-                   --eth-rpc-url ${Hol_RPC} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
+          echo "❌ $PROJECT_DIR not found. Run 'RUN Drosera' first."
+          break
+        fi
 
-  drosera2:
-    image: ghcr.io/drosera-network/drosera-operator:latest
-    container_name: drosera-node2
-    network_mode: host
-    volumes:
-      - drosera_data2:/data
-    command: node --db-file-path /data/drosera.db \
-                   --network-p2p-port 31315 \
-                   --server-port 31316 \
-                   --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
-                   --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
-                   --eth-private-key ${private_key2:-${private_key}} \
-                   --listen-address 0.0.0.0 \
-                   --network-external-p2p-address ${SERVER_IP} \
-                   --disable-dnr-confirmation true
-    restart: always
+        cd "$PROJECT_DIR"
+        docker compose down -v || true
 
-volumes:
-  drosera_data:
-  drosera_data2:
-EOF
-              echo "🔄 Restarting with new host mode..."
-              docker compose up -d
-              cd "$HOME"
+        # Создаем/обновляем docker-compose.yml
+        if [[ -z "${private_key2:-}" ]]; then
+          one_container
+        else
+          two_containers
+        fi
+
+        echo "🔄 Restarting with new host mode..."
+        docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
+        cd "$HOME"
         break
         ;;
 
