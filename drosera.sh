@@ -745,8 +745,8 @@ EOF
         sed -i \
           's|^[[:space:]]*response_function = "helloworld(string)"|# &\nresponse_function = "respondWithDiscordName(string)"|' \
           drosera.toml
-        #echo " Drosera update "
-        #"$HOME/.drosera/bin/droseraup"
+        echo " Drosera update "
+        "$HOME/.drosera/bin/droseraup"
 
         echo "🔨 Building trap contract..."
         "$HOME/.foundry/bin/forge" build
