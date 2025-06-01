@@ -433,7 +433,7 @@ EOF
 
         echo "🔄 Updating drosera CLI..."
         #curl -fsSL https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
-        "$HOME/.drosera/bin/droseraup" || { echo "❌ droseraup failed"; exit 1; }
+        "$HOME/.drosera/bin/droseraup" 
 
         echo "🔄 Pulling latest Docker image..."
         docker pull ghcr.io/drosera-network/drosera-operator:latest
@@ -747,7 +747,7 @@ EOF
           's|^[[:space:]]*response_function = "helloworld(string)"|# &\nresponse_function = "respondWithDiscordName(string)"|' \
           drosera.toml
         echo " Drosera update "
-        "$HOME/.drosera/bin/droseraup" || { echo "❌ droseraup failed"; exit 1; }
+        "$HOME/.drosera/bin/droseraup" 
 
         echo "🔨 Building trap contract..."
         "$HOME/.foundry/bin/forge" build
