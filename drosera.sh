@@ -753,24 +753,24 @@ EOF
         echo "🔄 Applying trap changes..."
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
 
-        echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
+        # echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
 
-        # Цикл: проверяем метод isResponder, пока не станет true
-        while true; do
-          RESPONSE=$( "$HOME/.foundry/bin/cast" call \
-            ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
-            "isResponder(address)(bool)" "$public_key" \
-            --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
+        # # Цикл: проверяем метод isResponder, пока не станет true
+        # while true; do
+        #   RESPONSE=$( "$HOME/.foundry/bin/cast" call \
+        #     ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
+        #     "isResponder(address)(bool)" "$public_key" \
+        #     --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
 
-          echo "📝 isResponder returned: $RESPONSE"
-          if [[ "$RESPONSE" == "true" ]]; then
-            echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
-            break
-          fi
+        #   echo "📝 isResponder returned: $RESPONSE"
+        #   if [[ "$RESPONSE" == "true" ]]; then
+        #     echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
+        #     break
+        #   fi
 
-          echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
-          sleep 60
-        done
+        #   echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
+        #   sleep 60
+        # done
 
         # === Apply Host mode после того, как isResponder стал true ===
         echo "🔄 Запускаем Apply Host mode..."
@@ -798,6 +798,24 @@ EOF
         echo "🔄 Restarting with new host mode..."
         docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
         cd "$HOME"
+                echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
+
+        # Цикл: проверяем метод isResponder, пока не станет true
+        while true; do
+          RESPONSE=$( "$HOME/.foundry/bin/cast" call \
+            ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
+            "isResponder(address)(bool)" "$public_key" \
+            --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
+
+          echo "📝 isResponder returned: $RESPONSE"
+          if [[ "$RESPONSE" == "true" ]]; then
+            echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
+            break
+          fi
+
+          echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
+          sleep 60
+        done
         break
         ;;
 
