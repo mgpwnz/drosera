@@ -35,7 +35,7 @@ services:
                    --server-port 31314 \
                    --eth-rpc-url ${Hol_RPC} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 \
                    --eth-private-key ${private_key} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
@@ -64,7 +64,7 @@ services:
                    --server-port 31314 \
                    --eth-rpc-url ${Hol_RPC} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 \
                    --eth-private-key ${private_key} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
@@ -80,9 +80,9 @@ services:
     command: node --db-file-path /data/drosera.db \
                    --network-p2p-port 31315 \
                    --server-port 31316 \
-                   --eth-rpc-url ${Hol_RPC2:-${Hol_RPC}} \
+                   --eth-rpc-url ${Hol_RPC2} \
                    --eth-backup-rpc-url https://holesky.drpc.org \
-                   --drosera-address ${TRAP_ADDRESS:-0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8} \
+                   --drosera-address 0xea08f7d533C2b9A62F40D5326214f39a8E3A32F8 \
                    --eth-private-key ${private_key2} \
                    --listen-address 0.0.0.0 \
                    --network-external-p2p-address ${SERVER_IP} \
