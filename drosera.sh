@@ -371,7 +371,9 @@ EOF
 
         echo "🔄 Fetching latest release from GitHub..."
         VERSION=$(curl -s https://api.github.com/repos/drosera-network/releases/releases/latest | jq -r '.tag_name')
-
+        if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+          VERSION="v1.17.2"
+        fi
         ASSET="drosera-operator-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
         URL="https://github.com/drosera-network/releases/releases/download/${VERSION}/${ASSET}"
 
@@ -419,7 +421,9 @@ EOF
 
         # Получаем новую версию оператора
         VERSION=$(curl -s https://api.github.com/repos/drosera-network/releases/releases/latest | jq -r '.tag_name')
-
+        if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+          VERSION="v1.17.2"
+        fi
         ASSET="drosera-operator-${VERSION}-x86_64-unknown-linux-gnu.tar.gz"
         URL="https://github.com/drosera-network/releases/releases/download/${VERSION}/${ASSET}"
         echo "🔽 Downloading operator version $VERSION..."
