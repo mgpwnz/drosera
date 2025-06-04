@@ -143,7 +143,7 @@ while true; do
         # Устанавливаем Drosera CLI
         if ! command -v drosera &>/dev/null; then
           echo "🔽 Installing Drosera CLI..."
-          curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+          curl https://raw.githubusercontent.com/drosera-network/releases/main/droseraup/install | bash || { echo "❌ Drosera install failed"; exit 1; }
         else
           echo "ℹ️ drosera CLI уже присутствует"
         fi
@@ -172,8 +172,8 @@ while true; do
         source "$HOME/.bashrc"
 
         # Обновляем droseraup и foundryup
-        echo "🔄 Updating droseraup..."
-        "$HOME/.drosera/bin/droseraup" || { echo "❌ droseraup failed"; exit 1; }
+        #echo "🔄 Updating droseraup..."
+        #"$HOME/.drosera/bin/droseraup" || { echo "❌ droseraup failed"; exit 1; }
         echo "🔄 Updating foundryup..."
         "$HOME/.foundry/bin/foundryup" || { echo "❌ foundryup failed"; exit 1; }
 
@@ -432,8 +432,8 @@ EOF
         rm -f "$ASSET"
 
         echo "🔄 Updating drosera CLI..."
-        #curl -fsSL https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
-        "$HOME/.drosera/bin/droseraup" 
+        curl https://raw.githubusercontent.com/drosera-network/releases/main/droseraup/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+        #"$HOME/.drosera/bin/droseraup" 
 
         echo "🔄 Pulling latest Docker image..."
         docker pull ghcr.io/drosera-network/drosera-operator:latest
