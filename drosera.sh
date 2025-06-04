@@ -251,8 +251,8 @@ while true; do
         cd "$TRAP_DIR" || { echo "❌ Не удалось зайти в $TRAP_DIR"; exit 1; }
 
         # Настраиваем локально git user
-        git config user.email "$github_Email"
-        git config user.name  "$github_Username"
+        git config --global user.email "$github_Email"
+        git config --global user.name  "$github_Username"
 
         read -p "⚠️ Do you already have a trap address? [y/N]: " has_trap
         if [[ "$has_trap" =~ ^([yY][eE][sS]|[yY])$ ]]; then
