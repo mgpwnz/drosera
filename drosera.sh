@@ -802,7 +802,7 @@ EOF
 
         #   echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
         #   sleep 60
-        done
+        # done
         break
         ;;
 
