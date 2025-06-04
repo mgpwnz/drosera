@@ -196,19 +196,11 @@ while true; do
 
         if [[ -z "${private_key:-}" ]]; then
           read -p "Enter your private key: " private_key
-          if ! is_valid_eth_address "$private_key"; then
-            echo "❌ Private key не похоже на корректный адрес"
-            exit 1
-          fi
           echo "private_key=\"$private_key\"" >> "$ENV_FILE"
         fi
 
         if [[ -z "${public_key:-}" ]]; then
           read -p "Enter your public key: " public_key
-          if ! is_valid_eth_address "$public_key"; then
-            echo "❌ Public key не похоже на корректный адрес"
-            exit 1
-          fi
           echo "public_key=\"$public_key\"" >> "$ENV_FILE"
         fi
 
@@ -222,19 +214,11 @@ while true; do
         if [[ "$add2" =~ ^([yY][eE][sS]|[yY])$ ]]; then
           if [[ -z "${private_key2:-}" ]]; then
             read -p "Enter your private key2: " private_key2
-            if ! is_valid_eth_address "$private_key2"; then
-              echo "❌ private_key2 невалидный адрес"
-              exit 1
-            fi
             echo "private_key2=\"$private_key2\"" >> "$ENV_FILE"
           fi
 
           if [[ -z "${public_key2:-}" ]]; then
             read -p "Enter your public key2: " public_key2
-            if ! is_valid_eth_address "$public_key2"; then
-              echo "❌ public_key2 невалидный адрес"
-              exit 1
-            fi
             echo "public_key2=\"$public_key2\"" >> "$ENV_FILE"
           fi
 
