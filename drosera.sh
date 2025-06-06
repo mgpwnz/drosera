@@ -740,69 +740,69 @@ EOF
         echo "🔄 Applying trap changes..."
         DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hol_RPC"
 
-        # echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
-
-        # # Цикл: проверяем метод isResponder, пока не станет true
-        # while true; do
-        #   RESPONSE=$( "$HOME/.foundry/bin/cast" call \
-        #     ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
-        #     "isResponder(address)(bool)" "$public_key" \
-        #     --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
-
-        #   echo "📝 isResponder returned: $RESPONSE"
-        #   if [[ "$RESPONSE" == "true" ]]; then
-        #     echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
-        #     break
-        #   fi
-
-        #   echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
-        #   sleep 60
-        # done
-
-        # === Apply Host mode после того, как isResponder стал true ===
-        # echo "🔄 Запускаем Apply Host mode..."
-
-        # SERVER_IP=$(hostname -I | awk '{print $1}')
-        # if [[ -z "$SERVER_IP" ]]; then
-        #   echo "❌ Не удалось получить IP"
-        #   break
-        # fi
-        # if [[ ! -d "$PROJECT_DIR" ]]; then
-        #   echo "❌ $PROJECT_DIR not found. Run 'RUN Drosera' first."
-        #   break
-        # fi
-
-        # cd "$PROJECT_DIR"
-        # docker compose down -v || true
-
-        # # Создаем/обновляем docker-compose.yml
-        # if [[ -z "${private_key2:-}" ]]; then
-        #   one_container
-        # else
-        #   two_containers
-        # fi
-
-        # echo "🔄 Restarting with new host mode..."
-        # docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
-        # cd "$HOME"
-        #         echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
+        echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
 
         # Цикл: проверяем метод isResponder, пока не станет true
-        # while true; do
-        #   RESPONSE=$( "$HOME/.foundry/bin/cast" call \
-        #     ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
-        #     "isResponder(address)(bool)" "$public_key" \
-        #     --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
+        while true; do
+          RESPONSE=$( "$HOME/.foundry/bin/cast" call \
+            ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
+            "isResponder(address)(bool)" "$public_key" \
+            --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
 
-        #   echo "📝 isResponder returned: $RESPONSE"
-        #   if [[ "$RESPONSE" == "true" ]]; then
-        #     echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
-        #     break
-        #   fi
+          echo "📝 isResponder returned: $RESPONSE"
+          if [[ "$RESPONSE" == "true" ]]; then
+            echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
+            break
+          fi
 
-        #   echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
-        #   sleep 60
-        # done
+          echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
+          sleep 60
+        done
+
+        #=== Apply Host mode после того, как isResponder стал true ===
+        echo "🔄 Запускаем Apply Host mode..."
+
+        SERVER_IP=$(hostname -I | awk '{print $1}')
+        if [[ -z "$SERVER_IP" ]]; then
+          echo "❌ Не удалось получить IP"
+          break
+        fi
+        if [[ ! -d "$PROJECT_DIR" ]]; then
+          echo "❌ $PROJECT_DIR not found. Run 'RUN Drosera' first."
+          break
+        fi
+
+        cd "$PROJECT_DIR"
+        docker compose down -v || true
+
+        # Создаем/обновляем docker-compose.yml
+        if [[ -z "${private_key2:-}" ]]; then
+          one_container
+        else
+          two_containers
+        fi
+
+        echo "🔄 Restarting with new host mode..."
+        docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
+        cd "$HOME"
+                echo "🔍 Будем проверять isResponder каждые 60 секунд до true..."
+
+        # Цикл: проверяем метод isResponder, пока не станет true
+        while true; do
+          RESPONSE=$( "$HOME/.foundry/bin/cast" call \
+            ${RESPONSE_CONTRACT:-0x4608Afa7f277C8E0BE232232265850d1cDeB600E} \
+            "isResponder(address)(bool)" "$public_key" \
+            --rpc-url "$Hol_RPC" 2>/dev/null ) || RESPONSE="false"
+
+          echo "📝 isResponder returned: $RESPONSE"
+          if [[ "$RESPONSE" == "true" ]]; then
+            echo "✅ isResponder == true — выходим из цикла и запускаем Apply Host mode."
+            break
+          fi
+
+          echo "⏳ isResponder != true — ждём 60 секунд и проверяем снова..."
+          sleep 60
+        done
         break
         ;;
 
