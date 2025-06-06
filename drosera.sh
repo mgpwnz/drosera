@@ -173,7 +173,7 @@ while true; do
 
         # Обновляем droseraup и foundryup
         #echo "🔄 Updating droseraup..."
-        #"$HOME/.drosera/bin/droseraup" || { echo "❌ droseraup failed"; exit 1; }
+        "$HOME/.drosera/bin/droseraup" || { echo "❌ droseraup failed"; exit 1; }
         echo "🔄 Updating foundryup..."
         "$HOME/.foundry/bin/foundryup" || { echo "❌ foundryup failed"; exit 1; }
 
@@ -417,7 +417,7 @@ EOF
 
         echo "🔄 Updating drosera CLI..."
         curl https://raw.githubusercontent.com/drosera-network/releases/main/droseraup/install | bash || { echo "❌ Drosera install failed"; exit 1; }
-        #"$HOME/.drosera/bin/droseraup" 
+        "$HOME/.drosera/bin/droseraup" 
 
         echo "🔄 Pulling latest Docker image..."
         docker pull ghcr.io/drosera-network/drosera-operator:latest
