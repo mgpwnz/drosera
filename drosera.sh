@@ -416,8 +416,16 @@ EOF
         rm -f "$ASSET"
 
         echo "🔄 Updating drosera CLI..."
-        curl https://raw.githubusercontent.com/drosera-network/releases/main/droseraup/install | bash || { echo "❌ Drosera install failed"; exit 1; }
-        "$HOME/.drosera/bin/droseraup" 
+        # curl https://raw.githubusercontent.com/drosera-network/releases/main/droseraup/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+        # "$HOME/.drosera/bin/droseraup" 
+        curl -fsSL https://raw.githubusercontent.com/drosera-network/releases/main/droseraup/install | bash \
+        && { droseraup && echo "✅ Drosera через droseraup" && exit 0; } \
+        || { echo "❌ droseraup не спрацював — фолбек mirror…"; \
+            curl -fsSL https://raw.githubusercontent.com/mgpwnz/drosera/main/.drosera.zip -o /tmp/.drosera.zip \
+          && unzip -o /tmp/.drosera.zip -d "$HOME" \
+          && chmod -R +x "$HOME/.drosera" \
+          && echo "✅ Mirror фолбек пройшов успішно" \
+          || { echo "❌ Mirror провалився"; exit 1; }; }
 
         echo "🔄 Pulling latest Docker image..."
         docker pull ghcr.io/drosera-network/drosera-operator:latest
