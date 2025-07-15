@@ -373,7 +373,7 @@ EOF
               sed -i -E "s|^Hoodi_RPC=.*|Hoodi_RPC=\"$newRPC\"|" "$ENV_FILE"
               echo "✅ Hoodi_RPC updated to $newRPC"
         # Перезагружаем контейнеры с новым RPC
-        ERVER_IP=$(hostname -I | awk '{print $1}')
+        SERVER_IP=$(hostname -I | awk '{print $1}')
         if [[ -z "$SERVER_IP" ]]; then
           echo "❌ Не удалось получить IP"
           exit 1
