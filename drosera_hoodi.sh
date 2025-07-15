@@ -360,6 +360,7 @@ EOF
           cd "$PROJECT_DIR"
           docker compose down -v || true
           docker compose up -d
+          fi
           echo "🔄 Drosera containers restarted with new RPC"
         break
         ;;
