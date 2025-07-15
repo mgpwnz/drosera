@@ -12,7 +12,7 @@ command -v git  >/dev/null 2>&1 || { echo "❌ git не установлен";  
 ENV_FILE="$HOME/.env.drosera"
 TRAP_DIR="$HOME/my-drosera-trap"
 PROJECT_DIR="$HOME/Drosera-Network"
-TOML_FILE="$HOME/Drosera-Network/drosera.toml"
+TOML_FILE="$HOME/my-drosera-trap/drosera.toml"
 
 # Функция проверки Ethereum-адреса
 function is_valid_eth_address() {
