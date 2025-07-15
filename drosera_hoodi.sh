@@ -76,7 +76,7 @@ generate_compose() {
   volumes:
     op1_data:
     op2_data:
-  EOF
+EOF
 }
 
 # Main menu
