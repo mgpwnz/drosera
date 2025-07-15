@@ -372,6 +372,11 @@ EOF
               sed -i -E "s|^Hoodi_RPC=.*|Hoodi_RPC=\"$newRPC\"|" "$ENV_FILE"
               echo "✅ Hoodi_RPC updated to $newRPC"
         # Перезагружаем контейнеры с новым RPC
+        ERVER_IP=$(hostname -I | awk '{print $1}')
+        if [[ -z "$SERVER_IP" ]]; then
+          echo "❌ Не удалось получить IP"
+          exit 1
+        fi
         if [[ -d "$PROJECT_DIR" ]]; then
           cd "$PROJECT_DIR"
           docker compose down -v || true
