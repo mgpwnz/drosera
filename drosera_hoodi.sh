@@ -318,7 +318,8 @@ EOF
         fi
         # Создаем два контейнера
         two_containers
-
+        docker pull ghcr.io/drosera-network/drosera-operator:latest
+        
         echo "🔄 Starting Drosera operator..."
         docker compose -f "$PROJECT_DIR/docker-compose.yml" up -d
         echo "✅ Drosera is up."
