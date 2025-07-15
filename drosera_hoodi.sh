@@ -174,9 +174,10 @@ while true; do
 
         if [[ -z "${Hoodi_RPC:-}" ]]; then
           read -p "🌐 Hoodi RPC URL (default: https://ethereum-hoodi-rpc.publicnode.com): " inputHoodi_RPC
-          Hoodi_RPC="${inputHoodiRPC:-https://ethereum-hoodi-rpc.publicnode.com}"
-          echo "Hoodi_RPC=\"$Hoodi_RPC\"" >> "$ENV_FILE"
+          Hoodi_RPC="${inputHoodi_RPC:-https://ethereum-hoodi-rpc.publicnode.com}"
+          printf 'Hoodi_RPC="%s"\n' "$Hoodi_RPC" >> "$ENV_FILE"
         fi
+
         # Второй адрес 
           if [[ -z "${private_key2:-}" ]]; then
             read -p "Enter your private key2: " private_key2
