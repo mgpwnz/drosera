@@ -355,7 +355,12 @@ EOF
               read -p "Enter new RPC URL: " newRPC
               sed -i -E "s|^Hoodi_RPC=.*|Hoodi_RPC=\"$newRPC\"|" "$ENV_FILE"
               echo "✅ Hoodi_RPC updated to $newRPC"
-
+        # Перезагружаем контейнеры с новым RPC
+        if [[ -d "$PROJECT_DIR" ]]; then
+          cd "$PROJECT_DIR"
+          docker compose down -v || true
+          docker compose up -d
+          echo "🔄 Drosera containers restarted with new RPC"
         break
         ;;
 
