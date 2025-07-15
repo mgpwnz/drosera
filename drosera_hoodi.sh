@@ -12,6 +12,7 @@ command -v git  >/dev/null 2>&1 || { echo "❌ git не установлен";  
 ENV_FILE="$HOME/.env.drosera"
 TRAP_DIR="$HOME/my-drosera-trap"
 PROJECT_DIR="$HOME/Drosera-Network"
+TOML_FILE="$HOME/Drosera-Network/drosera.toml"
 
 # Функция проверки Ethereum-адреса
 function is_valid_eth_address() {
@@ -220,15 +221,19 @@ while true; do
         # mkdir -p src
         "$HOME/.bun/bin/bun" install
         "$HOME/.foundry/bin/forge" build
-
+        # Удаляем строку whitelist = []
+        sed -i '/^whitelist[[:space:]]*=[[:space:]]*\[\]/d' "$TOML_FILE"
         # Добавляем в whitelist значение public_key и public_key2
         cat >> drosera.toml <<EOF
 whitelist = ["$public_key", "$public_key2"]
 EOF
-        # Проверяем, есть ли уже trap_address
-        if [[ -z "${existing_trap:-}" ]]; then
-          sed -i "s|^address = .*|address = \"$existing_trap\"|" drosera.toml
-        fi
+        echo "✅ Trap initialized in $TRAP_DIR"
+          if grep -q '^[[:space:]]*existing_trap=' "$ENV_FILE" && [[ -n "${existing_trap:-}" ]]; then
+              printf '\naddress = "%s"\n' "$existing_trap" >> "$TOML_FILE"
+              echo "✅ Вставлен address = \"$existing_trap\""
+          else
+              echo "⚠️ existing_trap не задан или пуст — ничего не добавлено" >&2
+          fi
           # Создаём новый trap
           echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+). Пополните баланс."
           read -p "Press Enter to continue…"
