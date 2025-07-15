@@ -282,13 +282,29 @@ EOF
         fi
         chmod +x "$OPERATOR_BIN"
 
-        echo "🚀 Registering operator with public_key=$public_key"
-        "$OPERATOR_BIN" register --eth-rpc-url "$Hoodi_RPC" --eth-private-key "$private_key"
-        sleep 20
-        echo "🚀 Registering second operator with public_key2=$public_key2"
-        "$OPERATOR_BIN" register --eth-rpc-url "$Hoodi_RPC" --eth-private-key "$private_key2"
+        register_safe() {
+          local key=$1
+          local tag=$2
+          echo "🚀 Registering operator (${tag})"
+          # ловим и сохраняем и stdout, и stderr
+          output=$("$OPERATOR_BIN" register --eth-rpc-url "$Hoodi_RPC" --eth-private-key "$key" 2>&1) || {
+            if echo "$output" | grep -q "OperatorAlreadyRegistered"; then
+              echo "ℹ️ OperatorAlreadyRegistered: пропускаем"
+            else
+              echo "❌ Registration failed for ${tag}:"
+              echo "$output"
+              exit 1
+            fi
+          }
+        }
 
-        echo "✅ CLI operator registration completed."
+        # Регистрируем первый ключ
+        register_safe "$private_key" "public_key=$public_key"
+
+        sleep 20
+
+        # Регистрируем второй ключ
+        register_safe "$private_key2" "public_key2=$public_key2"
         break
         ;;
 
