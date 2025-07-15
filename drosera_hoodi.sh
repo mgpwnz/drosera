@@ -375,6 +375,8 @@ EOF
         if [[ -d "$PROJECT_DIR" ]]; then
           cd "$PROJECT_DIR"
           docker compose down -v || true
+          rm docker-compose.yml || true
+          two_containers
           docker compose up -d
           fi
           echo "🔄 Drosera containers restarted with new RPC"
