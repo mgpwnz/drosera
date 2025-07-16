@@ -236,7 +236,7 @@ EOF
               echo "⚠️ existing_trap не задан или пуст — ничего не добавлено" >&2
           fi
           # Создаём новый trap
-          echo "📲 You'll need an EVM wallet & some Holesky ETH (0.2 - 2+). Пополните баланс."
+          echo "📲 You'll need an EVM wallet & some Hoodi ETH (0.2 - 2+). Пополните баланс."
           read -p "Press Enter to continue…"
 
           if [[ -n "${Hoodi_RPC:-}" ]]; then
