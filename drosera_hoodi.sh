@@ -108,14 +108,6 @@ while true; do
       "Setup CLI & add env")
         echo "--- Setup CLI & add env ---"
 
-        # Устанавливаем Drosera CLI
-        if ! command -v drosera &>/dev/null; then
-          echo "🔽 Installing Drosera CLI..."
-          curl https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
-        else
-          echo "ℹ️ drosera CLI уже присутствует"
-        fi
-
         # Устанавливаем Foundry
         if ! command -v forge &>/dev/null; then
           echo "🔽 Installing Foundry..."
@@ -138,6 +130,14 @@ while true; do
             || echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
         done
         source "$HOME/.bashrc"
+
+        # Устанавливаем Drosera CLI
+        if ! command -v drosera &>/dev/null; then
+          echo "🔽 Installing Drosera CLI..."
+          curl https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+        else
+          echo "ℹ️ drosera CLI уже присутствует"
+        fi
 
         # Обновляем droseraup и foundryup
         #echo "🔄 Updating droseraup..."
