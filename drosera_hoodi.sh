@@ -111,7 +111,7 @@ while true; do
         # Устанавливаем Drosera CLI
         if ! command -v drosera &>/dev/null; then
           echo "🔽 Installing Drosera CLI..."
-          curl https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
+          curl -L https://app.drosera.io/install | bash || { echo "❌ Drosera install failed"; exit 1; }
         else
           echo "ℹ️ drosera CLI уже присутствует"
         fi
