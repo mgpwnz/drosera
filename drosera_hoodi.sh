@@ -191,7 +191,7 @@ while true; do
         read -p "⚠️ Do you already have a trap address? [y/N]: " has_trap
         if [[ "$has_trap" =~ ^([yY][eE][sS]|[yY])$ ]]; then
           read -p "Enter existing trap address: " trap_address
-          echo "trap_address=\"$existing_trap\"" >> "$ENV_FILE"
+          echo "trap_address=\"$trap_address\"" >> "$ENV_FILE"
         fi
         echo "🔁 Using conf $ENV_FILE"
         break
@@ -229,11 +229,11 @@ while true; do
 whitelist = ["$public_key", "$public_key2"]
 EOF
         echo "✅ Trap initialized in $TRAP_DIR"
-          if grep -q '^[[:space:]]*existing_trap=' "$ENV_FILE" && [[ -n "${existing_trap:-}" ]]; then
-              printf '\naddress = "%s"\n' "$existing_trap" >> "$TOML_FILE"
-              echo "✅ Вставлен address = \"$existing_trap\""
+          if grep -q '^[[:space:]]*trap_address=' "$ENV_FILE" && [[ -n "${trap_address:-}" ]]; then
+              printf '\naddress = "%s"\n' "$trap_address" >> "$TOML_FILE"
+              echo "✅ Вставлен address = \"$trap_address\""
           else
-              echo "⚠️ existing_trap не задан или пуст — ничего не добавлено" >&2
+              echo "⚠️ trap_address не задан или пуст — ничего не добавлено" >&2
           fi
           # Создаём новый trap
           echo "📲 You'll need an EVM wallet & some Hoodi ETH (0.2 - 2+). Пополните баланс."
