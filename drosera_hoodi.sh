@@ -199,56 +199,69 @@ while true; do
 
       ############################
       "Create trap")
-        echo "--- Create trap ---"
-        if [[ ! -f "$ENV_FILE" ]]; then
-          echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
-          exit 1
-        fi
-        source "$ENV_FILE"
-        : "${github_Email:? github_Email is not set in $ENV_FILE}"
-        : "${github_Username:? github_Username is not set in $ENV_FILE}"
-        : "${private_key:? private_key is not set in $ENV_FILE}"
-        : "${public_key:? public_key is not set in $ENV_FILE}"
-        # Hoodi_RPC может быть пустым
+echo "--- Create trap ---"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "❌ $ENV_FILE not found. Run 'Setup CLI & add env'."
+  exit 1
+fi
 
-        mkdir -p "$TRAP_DIR"
-        cd "$TRAP_DIR" || { echo "❌ Не удалось зайти в $TRAP_DIR"; exit 1; }
+source "$ENV_FILE"
+: "${github_Email:? github_Email is not set in $ENV_FILE}"
+: "${github_Username:? github_Username is not set in $ENV_FILE}"
+: "${private_key:? private_key is not set in $ENV_FILE}"
+: "${public_key:? public_key is not set in $ENV_FILE}"
+# public_key2 може бути пустим
+# Hoodi_RPC може бути пустым
 
-        # Настраиваем локально git user
-        git config --global user.email "$github_Email"
-        git config --global user.name  "$github_Username"
-        # Клонируем шаблон, генерируем контракт
-        "$HOME/.foundry/bin/forge" init -t drosera-network/trap-foundry-template
-        # mkdir -p src
-        "$HOME/.bun/bin/bun" install
-        "$HOME/.foundry/bin/forge" build
-        # Удаляем строку whitelist = []
-        sed -i '/^whitelist[[:space:]]*=[[:space:]]*\[\]/d' "$TOML_FILE"
-        # Добавляем в whitelist значение public_key и public_key2
-        cat >> drosera.toml <<EOF
-whitelist = ["$public_key", "$public_key2"]
-EOF
-        echo "✅ Trap initialized in $TRAP_DIR"
-          if grep -q '^[[:space:]]*trap_address=' "$ENV_FILE" && [[ -n "${trap_address:-}" ]]; then
-              printf '\naddress = "%s"\n' "$trap_address" >> "$TOML_FILE"
-              echo "✅ Вставлен address = \"$trap_address\""
-          else
-              echo "⚠️ trap_address не задан или пуст — ничего не добавлено" >&2
-          fi
-          # Создаём новый trap
-          echo "📲 You'll need an EVM wallet & some Hoodi ETH (0.2 - 2+). Пополните баланс."
-          read -p "Press Enter to continue…"
+mkdir -p "$TRAP_DIR"
+cd "$TRAP_DIR" || { echo "❌ Не удалось зайти в $TRAP_DIR"; exit 1; }
 
-          if [[ -n "${Hoodi_RPC:-}" ]]; then
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hoodi_RPC"
-          else
-            DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
-          fi
-          "$HOME/.drosera/bin/drosera" dryrun
+if [[ -d ".git" && -f "$TOML_FILE" ]]; then
+  echo "ℹ️ Trap вже існує — оновлюємо whitelist/address"
+else
+  echo "📦 Створюємо новий trap…"
+  git config --global user.email "$github_Email"
+  git config --global user.name  "$github_Username"
 
-        echo "📂 Trap created in $TRAP_DIR"
-        cd "$HOME"
-        break
+  "$HOME/.foundry/bin/forge" init -t drosera-network/trap-foundry-template
+  "$HOME/.bun/bin/bun" install
+  "$HOME/.foundry/bin/forge" build
+fi
+
+# Видаляємо старий пустий whitelist
+sed -i '/^whitelist[[:space:]]*=[[:space:]]*\[\]/d' "$TOML_FILE"
+
+# Додаємо whitelist (якщо ще нема)
+if ! grep -q '^[[:space:]]*whitelist' "$TOML_FILE"; then
+  echo "whitelist = [\"$public_key\"${public_key2:+, \"$public_key2\"}]" >> "$TOML_FILE"
+  echo "✅ Додано whitelist"
+fi
+
+# Додаємо trap_address (якщо є)
+if grep -q '^[[:space:]]*trap_address=' "$ENV_FILE" && [[ -n "${trap_address:-}" ]]; then
+  if ! grep -q '^[[:space:]]*address' "$TOML_FILE"; then
+    printf '\naddress = "%s"\n' "$trap_address" >> "$TOML_FILE"
+    echo "✅ Вставлен address = \"$trap_address\""
+  fi
+else
+  echo "⚠️ trap_address не задан або пустий — нічого не додано" >&2
+fi
+
+# Deploy
+echo "📲 You'll need an EVM wallet & some Hoodi ETH (0.2 - 2+). Пополните баланс."
+read -p "Press Enter to continue…"
+
+if [[ -n "${Hoodi_RPC:-}" ]]; then
+  DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply --eth-rpc-url "$Hoodi_RPC"
+else
+  DROSERA_PRIVATE_KEY="$private_key" "$HOME/.drosera/bin/drosera" apply
+fi
+
+"$HOME/.drosera/bin/drosera" dryrun
+echo "📂 Trap готовий у $TRAP_DIR"
+cd "$HOME"
+break
+
         ;;
 
       ############################
