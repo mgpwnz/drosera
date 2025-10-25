@@ -334,7 +334,9 @@ break
         : "${public_key:? public_key not set in $ENV_FILE}"
         : "${Hoodi_RPC:? Hoodi_RPC not set in $ENV_FILE}"
 
-        SERVER_IP=$(hostname -I | awk '{print $1}')
+        #SERVER_IP=$(hostname -I | awk '{print $1}')
+        SERVER_IP=$(curl -s ifconfig.me)
+
         if [[ -z "$SERVER_IP" ]]; then
           echo "❌ Не удалось получить IP"
           exit 1
@@ -386,7 +388,9 @@ break
               sed -i -E "s|^Hoodi_RPC=.*|Hoodi_RPC=\"$newRPC\"|" "$ENV_FILE"
               echo "✅ Hoodi_RPC updated to $newRPC"
         # Перезагружаем контейнеры с новым RPC
-        SERVER_IP=$(hostname -I | awk '{print $1}')
+        #SERVER_IP=$(hostname -I | awk '{print $1}')
+        SERVER_IP=$(curl -s ifconfig.me)
+
         if [[ -z "$SERVER_IP" ]]; then
           echo "❌ Не удалось получить IP"
           exit 1
