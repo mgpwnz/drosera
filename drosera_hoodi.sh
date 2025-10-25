@@ -335,7 +335,7 @@ break
         : "${Hoodi_RPC:? Hoodi_RPC not set in $ENV_FILE}"
 
         #SERVER_IP=$(hostname -I | awk '{print $1}')
-        SERVER_IP=$(curl -s ifconfig.me)
+        SERVER_IP=$(curl -s https://api.ipify.org)
 
         if [[ -z "$SERVER_IP" ]]; then
           echo "❌ Не удалось получить IP"
@@ -389,7 +389,7 @@ break
               echo "✅ Hoodi_RPC updated to $newRPC"
         # Перезагружаем контейнеры с новым RPC
         #SERVER_IP=$(hostname -I | awk '{print $1}')
-        SERVER_IP=$(curl -s ifconfig.me)
+        SERVER_IP=$(curl -s https://api.ipify.org)
 
         if [[ -z "$SERVER_IP" ]]; then
           echo "❌ Не удалось получить IP"
